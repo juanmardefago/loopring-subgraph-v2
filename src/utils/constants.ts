@@ -15,6 +15,8 @@ export const TRANSACTION_SPOT_TRADE = "Spot trade"
 export const TRANSACTION_ACCOUNT_UPDATE = "Account update"
 export const TRANSACTION_AMM_UPDATE = "AMM update"
 export const TRANSACTION_SIGNATURE_VERIFICATION = "Signature verification"
+export const TRANSACTION_NFT_MINT = "NFT Mint"
+export const TRANSACTION_NFT_DATA = "NFT Data"
 export const LAUNCH_DAY = 18564; // 1603950102 / 86400. 1603929600 = Thursday, October 29, 2020 0:00:00
 export const LAUNCH_WEEK = 2651;
 export const SECONDS_PER_DAY = 86400;

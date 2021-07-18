@@ -209,7 +209,6 @@ interface Transaction {
   "Link to the Block entity where this Transaction took place"
   block: Block!
 
-
   tokenBalances: [AccountTokenBalance!]
 }
 
@@ -483,6 +482,26 @@ type SignatureVerification implements Transaction @entity {
   accountID: Int!
   "[RAW L2 DATA] Signature verification data"
   verificationData: String!
+
+  tokenBalances: [AccountTokenBalance!]
+}
+
+type MintNFT implements Transaction @entity {
+  id: ID!
+
+  data: String!
+
+  block: Block!
+
+  tokenBalances: [AccountTokenBalance!]
+}
+
+type DataNFT implements Transaction @entity {
+  id: ID!
+
+  data: String!
+
+  block: Block!
 
   tokenBalances: [AccountTokenBalance!]
 }

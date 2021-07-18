@@ -22,7 +22,9 @@ import {
   processWithdrawal,
   processAccountUpdate,
   processAmmUpdate,
-  processSignatureVerification
+  processSignatureVerification,
+  processNFTMint,
+  processNFTData
 } from './transactionProcessors'
 
 export function processTransactionData(id: String, data: String, block: Block): void {
@@ -44,6 +46,10 @@ export function processTransactionData(id: String, data: String, block: Block): 
     processAmmUpdate(id, data, block)
   } else if(txType == TRANSACTION_SIGNATURE_VERIFICATION) {
     processSignatureVerification(id, data, block)
+  } else if(txType == TRANSACTION_NFT_MINT) {
+    processNFTMint(id, data, block)
+  } else if(txType == TRANSACTION_NFT_DATA) {
+    processNFTData(id, data, block)
   }
 }
 
@@ -67,6 +73,10 @@ function getTransactionTypeFromData(data: String): String {
     response = TRANSACTION_AMM_UPDATE;
   } else if (typeString == "07") {
     response = TRANSACTION_SIGNATURE_VERIFICATION;
+  } else if (typeString == "08") {
+    response = TRANSACTION_NFT_MINT;
+  } else if (typeString == "09") {
+    response = TRANSACTION_NFT_DATA;
   } else {
     log.warning("Unknown transaction type: {}", [typeString]);
   }
