@@ -8,8 +8,11 @@ type Proxy @entity {
   "List of all historical Exchange entities"
   implementations: [Exchange!]! @derivedFrom(field: "proxy")
 
-  "Total amount of block processed"
+  "Total amount of blocks processed"
   blockCount: BigInt!
+
+  "Total amount of transactions processed across all blocks"
+  transactionCount: BigInt!
 }
 
 type Exchange @entity {
@@ -121,6 +124,9 @@ type Block @entity {
 
   "List of L2 Transactions for this L2 Block"
   transactions: [Transaction!]! @derivedFrom(field: "block")
+
+  "Total amount of transactions processed on this block. Should coincide with the lenght of the transactions list"
+  transactionCount: BigInt!
 }
 
 interface Account {
@@ -485,26 +491,26 @@ type SignatureVerification implements Transaction @entity {
 
   tokenBalances: [AccountTokenBalance!]
 }
-
-type MintNFT implements Transaction @entity {
-  id: ID!
-
-  data: String!
-
-  block: Block!
-
-  tokenBalances: [AccountTokenBalance!]
-}
-
-type DataNFT implements Transaction @entity {
-  id: ID!
-
-  data: String!
-
-  block: Block!
-
-  tokenBalances: [AccountTokenBalance!]
-}
+# Leaving it commented out to avoid leaking it on the schema until it's implemented
+# type MintNFT implements Transaction @entity {
+#   id: ID!
+#
+#   data: String!
+#
+#   block: Block!
+#
+#   tokenBalances: [AccountTokenBalance!]
+# }
+#
+# type DataNFT implements Transaction @entity {
+#   id: ID!
+#
+#   data: String!
+#
+#   block: Block!
+#
+#   tokenBalances: [AccountTokenBalance!]
+# }
 
 type PairDailyData @entity {
   "The ID follows this pattern: <PAIR ID>-<DAY NUMBER>."

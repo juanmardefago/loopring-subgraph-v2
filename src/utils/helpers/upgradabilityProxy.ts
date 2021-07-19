@@ -8,6 +8,7 @@ export function getProxy(): Proxy {
   if (proxy == null) {
     proxy = new Proxy("0");
     proxy.blockCount = BIGINT_ZERO;
+    proxy.transactionCount = BIGINT_ZERO;
 
     proxy.save();
   }

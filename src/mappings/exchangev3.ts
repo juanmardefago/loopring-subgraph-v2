@@ -40,10 +40,12 @@ export function handleSubmitBlocksV3(call: SubmitBlocks2Call): void {
 }
 
 function handleSubmitBlocks(call: ethereum.Call, blockArray: Array<SubmitBlocksCallBlocksStruct>): void {
-  let proxy = getProxy();
+
 
   for (let i = 0; i < blockArray.length; i++) {
+    let proxy = getProxy();
     proxy.blockCount = proxy.blockCount.plus(BIGINT_ONE);
+    proxy.save();
 
     let blockData = blockArray[i];
     let block = getOrCreateBlock(proxy.blockCount.toString());
@@ -69,6 +71,4 @@ function handleSubmitBlocks(call: ethereum.Call, blockArray: Array<SubmitBlocksC
 
     block.save();
   }
-
-  proxy.save();
 }

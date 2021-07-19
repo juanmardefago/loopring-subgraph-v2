@@ -3,24 +3,29 @@ import { Address, BigInt, log } from "@graphprotocol/graph-ts";
 import { DEFAULT_DECIMALS } from "../../utils/decimals";
 import {
   BIGINT_ZERO,
+  BIGINT_ONE,
   BIGDECIMAL_ZERO,
   ZERO_ADDRESS
 } from "../../utils/constants";
 import { extractData, extractInt } from "./data";
 import { intToString, compoundId } from "./index";
 import { processTransactionData } from "./transaction";
+import { getProxy } from './upgradabilityProxy'
 
 export function getOrCreateBlock(id: String): Block {
   let block = Block.load(id);
 
   if (block == null) {
     block = new Block(id);
+    block.transactionCount = BIGINT_ZERO
   }
 
   return block as Block;
 }
 
 export function processBlockData(block: Block): Block {
+  let proxy = getProxy()
+
   let data = block.data.slice(2); // Remove the 0x beginning of the hex string
   let offset = 0;
 
@@ -48,8 +53,14 @@ export function processBlockData(block: Block): Block {
     let txData = txData1.concat(txData2);
 
     let txId = compoundId(block.id, intToString(i));
-    processTransactionData(txId, txData, block);
+    let txValid = processTransactionData(txId, txData, block);
+    if (txValid) {
+      proxy.transactionCount = proxy.transactionCount + BIGINT_ONE
+      block.transactionCount = block.transactionCount + BIGINT_ONE
+    }
   }
+
+  proxy.save()
 
   return block as Block;
 }

@@ -13,7 +13,9 @@ import {
   TRANSACTION_WITHDRAWAL,
   TRANSACTION_ACCOUNT_UPDATE,
   TRANSACTION_AMM_UPDATE,
-  TRANSACTION_SIGNATURE_VERIFICATION
+  TRANSACTION_SIGNATURE_VERIFICATION,
+  TRANSACTION_NFT_MINT,
+  TRANSACTION_NFT_DATA
 } from "../../utils/constants";
 import {
   processDeposit,
@@ -27,11 +29,12 @@ import {
   processNFTData
 } from './transactionProcessors'
 
-export function processTransactionData(id: String, data: String, block: Block): void {
+export function processTransactionData(id: String, data: String, block: Block): boolean {
   let txType = getTransactionTypeFromData(data);
 
   if(txType == TRANSACTION_NOOP) {
-    // For now do nothing. Maybe we want to track the amount of No-op in the future?
+    // We don't want to count noops here, so we return false to indicate the tx is invalid
+    return false
   } else if(txType == TRANSACTION_DEPOSIT) {
     processDeposit(id, data, block)
   } else if(txType == TRANSACTION_WITHDRAWAL) {
@@ -47,10 +50,15 @@ export function processTransactionData(id: String, data: String, block: Block): 
   } else if(txType == TRANSACTION_SIGNATURE_VERIFICATION) {
     processSignatureVerification(id, data, block)
   } else if(txType == TRANSACTION_NFT_MINT) {
-    processNFTMint(id, data, block)
+    // processNFTMint(id, data, block)
   } else if(txType == TRANSACTION_NFT_DATA) {
-    processNFTData(id, data, block)
+    // processNFTData(id, data, block)
+  } else {
+    // If we don't know the tx type, we call it invalid
+    return false
   }
+
+  return true
 }
 
 function getTransactionTypeFromData(data: String): String {
