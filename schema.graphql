@@ -84,6 +84,9 @@ type Pair @entity {
 type Block @entity {
   id: ID!
 
+  "Same as ID but expressed as a BigInt so it can be used for sorting properly"
+  internalID: BigInt!
+
   "Transaction hash for the L1 Transaction where the L2 Block was submitted"
   txHash: String!
 

@@ -12,11 +12,13 @@ import { intToString, compoundId } from "./index";
 import { processTransactionData } from "./transaction";
 import { getProxy } from './upgradabilityProxy'
 
-export function getOrCreateBlock(id: String): Block {
+export function getOrCreateBlock(internalID: BigInt): Block {
+  let id = internalID.toString()
   let block = Block.load(id);
 
   if (block == null) {
     block = new Block(id);
+    block.internalID = internalID
     block.transactionCount = BIGINT_ZERO
   }
 
