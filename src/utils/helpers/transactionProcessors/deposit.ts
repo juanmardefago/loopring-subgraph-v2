@@ -11,7 +11,8 @@ import {
   createIfNewAccount,
   getToken,
   intToString,
-  getOrCreateAccountTokenBalance
+  getOrCreateAccountTokenBalance,
+  compoundIdToSortableDecimal
 } from "../index";
 
 // interface Deposit {
@@ -61,6 +62,7 @@ import {
 
 export function processDeposit(id: String, data: String, block: Block): void {
   let transaction = new Deposit(id);
+  transaction.internalID = compoundIdToSortableDecimal(id);
   transaction.data = data;
   transaction.block = block.id;
 

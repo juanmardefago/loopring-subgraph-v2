@@ -25,7 +25,8 @@ import {
   getAndUpdateTokenWeeklyData,
   getAndUpdatePairDailyData,
   getAndUpdatePairWeeklyData,
-  calculatePrice
+  calculatePrice,
+  compoundIdToSortableDecimal
 } from "../index";
 import { BIGINT_ZERO } from "../../constants";
 
@@ -228,6 +229,7 @@ import { BIGINT_ZERO } from "../../constants";
 
 export function processSpotTrade(id: String, data: String, block: Block): void {
   let transaction = new SpotTrade(id);
+  transaction.internalID = compoundIdToSortableDecimal(id);
   transaction.data = data;
   transaction.block = block.id;
 
@@ -307,7 +309,7 @@ export function processSpotTrade(id: String, data: String, block: Block): void {
     block.protocolFeeMakerBips
   );
 
-  let tokenBalances = new Array<String>()
+  let tokenBalances = new Array<String>();
 
   // Update token balances for account A
   let accountTokenBalanceAA = getOrCreateAccountTokenBalance(
@@ -327,7 +329,7 @@ export function processSpotTrade(id: String, data: String, block: Block): void {
   accountTokenBalanceAB.balance = accountTokenBalanceAB.balance
     .plus(transaction.fillBA)
     .minus(transaction.feeA);
-  accountTokenBalanceAB.save()
+  accountTokenBalanceAB.save();
   tokenBalances.push(accountTokenBalanceAB.id);
 
   // Update token balances for account B
@@ -338,7 +340,7 @@ export function processSpotTrade(id: String, data: String, block: Block): void {
   accountTokenBalanceBB.balance = accountTokenBalanceBB.balance.minus(
     transaction.fillSB
   );
-  accountTokenBalanceBB.save()
+  accountTokenBalanceBB.save();
   tokenBalances.push(accountTokenBalanceBB.id);
 
   let accountTokenBalanceBA = getOrCreateAccountTokenBalance(
@@ -348,7 +350,7 @@ export function processSpotTrade(id: String, data: String, block: Block): void {
   accountTokenBalanceBA.balance = accountTokenBalanceBA.balance
     .plus(transaction.fillBB)
     .minus(transaction.feeB);
-  accountTokenBalanceBA.save()
+  accountTokenBalanceBA.save();
   tokenBalances.push(accountTokenBalanceBA.id);
 
   // Should also update operator account balance
@@ -361,7 +363,7 @@ export function processSpotTrade(id: String, data: String, block: Block): void {
   operatorTokenBalanceA.balance = operatorTokenBalanceA.balance
     .plus(transaction.feeB)
     .minus(transaction.protocolFeeB);
-  operatorTokenBalanceA.save()
+  operatorTokenBalanceA.save();
   tokenBalances.push(operatorTokenBalanceA.id);
 
   let operatorTokenBalanceB = getOrCreateAccountTokenBalance(
@@ -371,7 +373,7 @@ export function processSpotTrade(id: String, data: String, block: Block): void {
   operatorTokenBalanceB.balance = operatorTokenBalanceB.balance
     .plus(transaction.feeA)
     .minus(transaction.protocolFeeA);
-  operatorTokenBalanceB.save()
+  operatorTokenBalanceB.save();
   tokenBalances.push(operatorTokenBalanceB.id);
 
   // update protocol balance
@@ -394,7 +396,7 @@ export function processSpotTrade(id: String, data: String, block: Block): void {
   protocolTokenBalanceB.balance = protocolTokenBalanceB.balance.plus(
     transaction.protocolFeeA
   );
-  protocolTokenBalanceB.save()
+  protocolTokenBalanceB.save();
   tokenBalances.push(protocolTokenBalanceB.id);
 
   // Update pair info

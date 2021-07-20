@@ -11,7 +11,8 @@ import {
   createIfNewAccount,
   getToken,
   intToString,
-  getOrCreateAccountTokenBalance
+  getOrCreateAccountTokenBalance,
+  compoundIdToSortableDecimal
 } from "../index";
 
 // interface NftData {
@@ -68,6 +69,7 @@ import {
 
 export function processNFTData(id: String, data: String, block: Block): void {
   let transaction = new DataNFT(id);
+  transaction.internalID = compoundIdToSortableDecimal(id);
   transaction.data = data;
   transaction.block = block.id;
 

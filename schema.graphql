@@ -230,6 +230,9 @@ interface Transaction {
   "All transactions IDs follow the same pattern: <BLOCK ID>-<TX INDEX>"
   id: ID!
 
+  "ID represented as a BigDecimal for sorting purposes"
+  internalID: BigDecimal!
+
   "Hex string representation of the encoded L2 data for this Transaction"
   data: String!
 
@@ -241,6 +244,9 @@ interface Transaction {
 
 type Deposit implements Transaction @entity {
   id: ID!
+
+  "ID represented as a BigDecimal for sorting purposes"
+  internalID: BigDecimal!
 
   data: String!
 
@@ -267,6 +273,9 @@ type Deposit implements Transaction @entity {
 
 type Withdrawal implements Transaction @entity {
   id: ID!
+
+  "ID represented as a BigDecimal for sorting purposes"
+  internalID: BigDecimal!
 
   data: String!
 
@@ -306,6 +315,9 @@ type Withdrawal implements Transaction @entity {
 
 type Transfer implements Transaction @entity {
   id: ID!
+
+  "ID represented as a BigDecimal for sorting purposes"
+  internalID: BigDecimal!
 
   data: String!
 
@@ -350,6 +362,9 @@ type Transfer implements Transaction @entity {
 
 type SpotTrade implements Transaction @entity {
   id: ID!
+
+  "ID represented as a BigDecimal for sorting purposes"
+  internalID: BigDecimal!
 
   data: String!
 
@@ -439,6 +454,9 @@ type SpotTrade implements Transaction @entity {
 type AccountUpdate implements Transaction @entity {
   id: ID!
 
+  "ID represented as a BigDecimal for sorting purposes"
+  internalID: BigDecimal!
+
   data: String!
 
   block: Block!
@@ -471,6 +489,9 @@ type AccountUpdate implements Transaction @entity {
 type AmmUpdate implements Transaction @entity {
   id: ID!
 
+  "ID represented as a BigDecimal for sorting purposes"
+  internalID: BigDecimal!
+
   data: String!
 
   block: Block!
@@ -495,6 +516,9 @@ type AmmUpdate implements Transaction @entity {
 type SignatureVerification implements Transaction @entity {
   id: ID!
 
+  "ID represented as a BigDecimal for sorting purposes"
+  internalID: BigDecimal!
+
   data: String!
 
   block: Block!
@@ -516,6 +540,9 @@ type SignatureVerification implements Transaction @entity {
 # type MintNFT implements Transaction @entity {
 #   id: ID!
 #
+#   "ID represented as a BigDecimal for sorting purposes"
+#   internalID: BigDecimal!
+#
 #   data: String!
 #
 #   block: Block!
@@ -526,6 +553,9 @@ type SignatureVerification implements Transaction @entity {
 # type DataNFT implements Transaction @entity {
 #   id: ID!
 #
+#   "ID represented as a BigDecimal for sorting purposes"
+#   internalID: BigDecimal!
+# 
 #   data: String!
 #
 #   block: Block!

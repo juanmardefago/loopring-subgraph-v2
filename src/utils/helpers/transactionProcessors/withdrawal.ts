@@ -16,7 +16,8 @@ import {
   createIfNewAccount,
   getToken,
   intToString,
-  getOrCreateAccountTokenBalance
+  getOrCreateAccountTokenBalance,
+  compoundIdToSortableDecimal
 } from "../index";
 
 // interface Withdrawal {
@@ -103,6 +104,7 @@ export function processWithdrawal(
   block: Block
 ): void {
   let transaction = new Withdrawal(id);
+  transaction.internalID = compoundIdToSortableDecimal(id);
   transaction.data = data;
   transaction.block = block.id;
 

@@ -16,7 +16,8 @@ import {
   createIfNewAccount,
   getToken,
   intToString,
-  getOrCreateAccountTokenBalance
+  getOrCreateAccountTokenBalance,
+  compoundIdToSortableDecimal
 } from "../index";
 
 // interface Transfer {
@@ -107,6 +108,7 @@ import {
 
 export function processTransfer(id: String, data: String, block: Block): void {
   let transaction = new Transfer(id);
+  transaction.internalID = compoundIdToSortableDecimal(id);
   transaction.data = data;
   transaction.block = block.id;
 
@@ -141,14 +143,18 @@ export function processTransfer(id: String, data: String, block: Block): void {
   let token = getToken(intToString(transaction.tokenID)) as Token;
   let feeToken = getToken(intToString(transaction.feeTokenID)) as Token;
 
-  createIfNewAccount(transaction.accountFromID, transaction.id, transaction.from);
+  createIfNewAccount(
+    transaction.accountFromID,
+    transaction.id,
+    transaction.from
+  );
   createIfNewAccount(transaction.accountToID, transaction.id, transaction.to);
 
-  let tokenBalances = new Array<String>()
+  let tokenBalances = new Array<String>();
 
   // Token transfer balance calculations
   // Avoid overwriting balance entities
-  if(token.id == feeToken.id) {
+  if (token.id == feeToken.id) {
     let fromAccountTokenBalance = getOrCreateAccountTokenBalance(
       fromAccountId,
       token.id

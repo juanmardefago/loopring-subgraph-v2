@@ -9,7 +9,8 @@ import { extractData, extractBigInt, extractInt } from "../data";
 import {
   createIfNewAccount,
   getToken,
-  intToString
+  intToString,
+  compoundIdToSortableDecimal
 } from "../index";
 
 // interface SignatureVerification {
@@ -52,6 +53,7 @@ export function processSignatureVerification(
   block: Block
 ): void {
   let transaction = new SignatureVerification(id);
+  transaction.internalID = compoundIdToSortableDecimal(id);
   transaction.data = data;
   transaction.block = block.id;
 
@@ -64,7 +66,7 @@ export function processSignatureVerification(
   transaction.verificationData = extractData(data, offset, 32);
   offset += 32;
 
-  let accountId = intToString(transaction.accountID)
+  let accountId = intToString(transaction.accountID);
 
   createIfNewAccount(transaction.accountID, transaction.id, transaction.owner);
 

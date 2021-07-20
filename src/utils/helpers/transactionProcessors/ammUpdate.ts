@@ -1,7 +1,12 @@
 import { AmmUpdate, Block, Token } from "../../../../generated/schema";
 import { BigInt, Address, Bytes } from "@graphprotocol/graph-ts";
 import { extractData, extractBigInt, extractInt } from "../data";
-import { getOrCreatePool, getToken, intToString } from "../index";
+import {
+  getOrCreatePool,
+  getToken,
+  intToString,
+  compoundIdToSortableDecimal
+} from "../index";
 
 // interface AmmUpdate {
 //   owner?: string;
@@ -60,6 +65,7 @@ import { getOrCreatePool, getToken, intToString } from "../index";
 
 export function processAmmUpdate(id: String, data: String, block: Block): void {
   let transaction = new AmmUpdate(id);
+  transaction.internalID = compoundIdToSortableDecimal(id);
   transaction.data = data;
   transaction.block = block.id;
 

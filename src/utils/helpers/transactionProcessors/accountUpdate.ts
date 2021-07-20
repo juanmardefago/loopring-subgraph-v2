@@ -10,7 +10,8 @@ import {
   getOrCreateUser,
   getToken,
   intToString,
-  getOrCreateAccountTokenBalance
+  getOrCreateAccountTokenBalance,
+  compoundIdToSortableDecimal
 } from "../index";
 
 // interface AccountUpdate {
@@ -88,6 +89,7 @@ export function processAccountUpdate(
   block: Block
 ): void {
   let transaction = new AccountUpdate(id);
+  transaction.internalID = compoundIdToSortableDecimal(id);
   transaction.data = data;
   transaction.block = block.id;
 
