@@ -30,6 +30,9 @@ type Token @entity {
   "Internal ID of the token within Loopring"
   id: ID!
 
+  "Internal ID of the token within loopring expressed as a number for ordering"
+  tokenID: BigInt!
+
   "Exchange active when the token was registered"
   exchange: Exchange!
 
