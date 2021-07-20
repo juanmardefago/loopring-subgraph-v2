@@ -10,5 +10,5 @@ export function compoundId(a: String, b: String): String {
 
 export function compoundIdToSortableDecimal(compoundId: String): BigDecimal {
   let splittedString = compoundId.split('-')
-  return BigDecimal.fromString(splittedString[0].concat(',').concat(splittedString[1]));
+  return BigDecimal.fromString(splittedString[0].concat('.').concat(splittedString[1]));
 }
