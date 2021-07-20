@@ -23,4 +23,4 @@ export {
 
 export { getProxy, getOrCreateExchange } from "./upgradabilityProxy";
 
-export { intToString, compoundId } from "./util";
+export { intToString, compoundId, compoundIdToSortableDecimal } from "./util";

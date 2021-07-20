@@ -56,6 +56,9 @@ type Pair @entity {
   "ID is recreated following the next pattern to standardize pair IDs: <LOWEST Token ID>-<HIGHEST Token ID>"
   id: ID!
 
+  "ID represented as a decimal number. Follows the same pattern but with a comma instead"
+  pairID: BigDecimal!
+
   token0: Token!
 
   token1: Token!

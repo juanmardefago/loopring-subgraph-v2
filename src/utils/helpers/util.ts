@@ -1,4 +1,4 @@
-import { BigInt } from "@graphprotocol/graph-ts";
+import { BigInt, BigDecimal } from "@graphprotocol/graph-ts";
 
 export function intToString(value: i32): String {
   return BigInt.fromI32(value).toString();
@@ -6,4 +6,9 @@ export function intToString(value: i32): String {
 
 export function compoundId(a: String, b: String): String {
   return a.concat("-").concat(b);
+}
+
+export function compoundIdToSortableDecimal(compoundId: String): BigDecimal {
+  let splittedString = compoundId.split('-')
+  return BigDecimal.fromString(splittedString[0].concat(',').concat(splittedString[1]));
 }

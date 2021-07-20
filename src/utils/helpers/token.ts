@@ -7,7 +7,7 @@ import {
   PairWeeklyData
 } from "../../../generated/schema";
 import { ERC20 } from "../../../generated/OwnedUpgradabilityProxy/ERC20";
-import { Address, BigInt, log } from "@graphprotocol/graph-ts";
+import { Address, BigInt, BigDecimal, log } from "@graphprotocol/graph-ts";
 import { DEFAULT_DECIMALS } from "../decimals";
 import {
   BIGINT_ZERO,
@@ -18,7 +18,7 @@ import {
   LAUNCH_WEEK,
   WEEK_OFFSET
 } from "../constants";
-import { intToString, compoundId } from "./index";
+import { intToString, compoundId, compoundIdToSortableDecimal } from "./index";
 
 export function getOrCreateToken(
   tokenId: String,
@@ -87,6 +87,7 @@ export function getOrCreatePair(
 
   if (pair == null && createIfNotFound) {
     pair = new Pair(id);
+    pair.pairID = compoundIdToSortableDecimal(id)
 
     // Link them in the same order as the ID.
     if (tokenAId < tokenBId) {
