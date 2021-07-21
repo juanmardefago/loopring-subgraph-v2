@@ -5,7 +5,7 @@ import {
   ProtocolAccount
 } from "../../../generated/schema";
 import { BigInt, Address, Bytes } from "@graphprotocol/graph-ts";
-import { compoundId, intToString } from "./util";
+import { compoundId, intToString, compoundIdToSortableDecimal } from "./util";
 import { ZERO_ADDRESS, BIGINT_ZERO } from "../constants";
 
 export function getOrCreateUser(
@@ -19,8 +19,10 @@ export function getOrCreateUser(
   if (user == null && createIfNotFound) {
     user = new User(id);
     user.internalID = BigInt.fromString(id);
-    user.createdAt = transactionId;
-    user.lastUpdatedAt = transactionId;
+    user.createdAt = compoundIdToSortableDecimal(transactionId);
+    user.lastUpdatedAt = compoundIdToSortableDecimal(transactionId);
+    user.createdAtTransaction = transactionId;
+    user.lastUpdatedAtTransaction = transactionId;
     user.address = Address.fromString(addressString) as Bytes;
 
     user.save();
@@ -40,8 +42,10 @@ export function getOrCreatePool(
   if (pool == null && createIfNotFound) {
     pool = new Pool(id);
     pool.internalID = BigInt.fromString(id);
-    pool.createdAt = transactionId;
-    pool.lastUpdatedAt = transactionId;
+    pool.createdAt = compoundIdToSortableDecimal(transactionId);
+    pool.lastUpdatedAt = compoundIdToSortableDecimal(transactionId);
+    pool.createdAtTransaction = transactionId;
+    pool.lastUpdatedAtTransaction = transactionId;
     pool.address = Address.fromString(addressString) as Bytes;
 
     pool.save();
@@ -75,8 +79,10 @@ export function getProtocolAccount(transactionId: String): ProtocolAccount {
     account = new ProtocolAccount("0");
     account.internalID = BIGINT_ZERO;
     account.address = Address.fromString(ZERO_ADDRESS) as Bytes;
-    account.createdAt = transactionId;
-    account.lastUpdatedAt = transactionId;
+    account.createdAt = compoundIdToSortableDecimal(transactionId);
+    account.lastUpdatedAt = compoundIdToSortableDecimal(transactionId);
+    account.createdAtTransaction = transactionId;
+    account.lastUpdatedAtTransaction = transactionId;
 
     account.save();
   }

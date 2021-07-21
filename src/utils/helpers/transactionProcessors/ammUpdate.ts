@@ -92,7 +92,8 @@ export function processAmmUpdate(id: String, data: String, block: Block): void {
     transaction.owner
   );
   pool.feeBipsAMM = transaction.feeBips;
-  pool.lastUpdatedAt = transaction.id;
+  pool.lastUpdatedAt = transaction.internalID;
+  pool.lastUpdatedAtTransaction = transaction.id;
 
   transaction.pool = pool.id;
 

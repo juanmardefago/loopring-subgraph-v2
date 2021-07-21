@@ -151,11 +151,17 @@ interface Account {
   "List of all the balances for each specific token the account has interacted with"
   balances: [AccountTokenBalance!]! @derivedFrom(field: "account")
 
+  "L2 transaction internalID where the account was first created and linked to an address. Useful for sorting and filtering purposes"
+  createdAt: BigDecimal!
+
+  "L2 transaction internalID that last updated the account entity. Useful for sorting and filtering purposes"
+  lastUpdatedAt: BigDecimal!
+
   "L2 transaction where the account was first created and linked to an address"
-  createdAt: Transaction!
+  createdAtTransaction: Transaction!
 
   "L2 transaction that last updated the account entity"
-  lastUpdatedAt: Transaction!
+  lastUpdatedAtTransaction: Transaction!
 }
 
 type User implements Account @entity {
@@ -172,9 +178,17 @@ type User implements Account @entity {
 
   balances: [AccountTokenBalance!]! @derivedFrom(field: "account")
 
-  createdAt: Transaction!
+  "L2 transaction internalID where the account was first created and linked to an address. Useful for sorting and filtering purposes"
+  createdAt: BigDecimal!
 
-  lastUpdatedAt: Transaction!
+  "L2 transaction internalID that last updated the account entity. Useful for sorting and filtering purposes"
+  lastUpdatedAt: BigDecimal!
+
+  "L2 transaction where the account was first created and linked to an address"
+  createdAtTransaction: Transaction!
+
+  "L2 transaction that last updated the account entity"
+  lastUpdatedAtTransaction: Transaction!
 }
 
 type Pool implements Account @entity {
@@ -190,9 +204,17 @@ type Pool implements Account @entity {
 
   balances: [AccountTokenBalance!]! @derivedFrom(field: "account")
 
-  createdAt: Transaction!
+  "L2 transaction internalID where the account was first created and linked to an address. Useful for sorting and filtering purposes"
+  createdAt: BigDecimal!
 
-  lastUpdatedAt: Transaction!
+  "L2 transaction internalID that last updated the account entity. Useful for sorting and filtering purposes"
+  lastUpdatedAt: BigDecimal!
+
+  "L2 transaction where the account was first created and linked to an address"
+  createdAtTransaction: Transaction!
+
+  "L2 transaction that last updated the account entity"
+  lastUpdatedAtTransaction: Transaction!
 }
 
 type ProtocolAccount implements Account @entity {
@@ -206,9 +228,17 @@ type ProtocolAccount implements Account @entity {
 
   balances: [AccountTokenBalance!]! @derivedFrom(field: "account")
 
-  createdAt: Transaction!
+  "L2 transaction internalID where the account was first created and linked to an address. Useful for sorting and filtering purposes"
+  createdAt: BigDecimal!
 
-  lastUpdatedAt: Transaction!
+  "L2 transaction internalID that last updated the account entity. Useful for sorting and filtering purposes"
+  lastUpdatedAt: BigDecimal!
+
+  "L2 transaction where the account was first created and linked to an address"
+  createdAtTransaction: Transaction!
+
+  "L2 transaction that last updated the account entity"
+  lastUpdatedAtTransaction: Transaction!
 }
 
 type AccountTokenBalance @entity {

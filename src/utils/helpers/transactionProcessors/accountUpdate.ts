@@ -116,7 +116,8 @@ export function processAccountUpdate(
     transaction.owner
   );
   user.publicKey = transaction.publicKey;
-  user.lastUpdatedAt = transaction.id;
+  user.lastUpdatedAt = transaction.internalID;
+  user.lastUpdatedAtTransaction = transaction.id;
 
   let feeToken = getToken(intToString(transaction.feeTokenID)) as Token;
 
