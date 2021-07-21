@@ -31,7 +31,7 @@ type Token @entity {
   id: ID!
 
   "Internal ID of the token within loopring expressed as a number for ordering"
-  tokenID: BigInt!
+  internalID: BigInt!
 
   "Exchange active when the token was registered"
   exchange: Exchange!
@@ -57,7 +57,7 @@ type Pair @entity {
   id: ID!
 
   "ID represented as a decimal number. Follows the same pattern but with a comma instead"
-  pairID: BigDecimal!
+  internalID: BigDecimal!
 
   token0: Token!
 
@@ -555,7 +555,7 @@ type SignatureVerification implements Transaction @entity {
 #
 #   "ID represented as a BigDecimal for sorting purposes"
 #   internalID: BigDecimal!
-# 
+#
 #   data: String!
 #
 #   block: Block!

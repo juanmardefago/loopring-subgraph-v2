@@ -29,7 +29,7 @@ export function getOrCreateToken(
   if (token == null) {
     token = new Token(tokenId);
     token.address = tokenAddress;
-    token.tokenID = BigInt.fromString(tokenId);
+    token.internalID = BigInt.fromString(tokenId);
 
     if (tokenId != "0") {
       let erc20Token = ERC20.bind(tokenAddress);
@@ -87,7 +87,7 @@ export function getOrCreatePair(
 
   if (pair == null && createIfNotFound) {
     pair = new Pair(id);
-    pair.pairID = compoundIdToSortableDecimal(id)
+    pair.internalID = compoundIdToSortableDecimal(id)
 
     // Link them in the same order as the ID.
     if (tokenAId < tokenBId) {
