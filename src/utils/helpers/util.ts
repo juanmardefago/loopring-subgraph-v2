@@ -8,7 +8,14 @@ export function compoundId(a: String, b: String): String {
   return a.concat("-").concat(b);
 }
 
-export function compoundIdToSortableDecimal(compoundId: String): BigDecimal {
-  let splittedString = compoundId.split('-')
-  return BigDecimal.fromString(splittedString[0].concat('.').concat(splittedString[1]));
+export function compoundIdToSortableDecimal(
+  compoundId: String,
+  secondPartPadding: i32 = 5
+): BigDecimal {
+  let splittedString = compoundId.split("-");
+  return BigDecimal.fromString(
+    splittedString[0]
+      .concat(".")
+      .concat(splittedString[1].padStart(secondPartPadding, "0"))
+  );
 }
