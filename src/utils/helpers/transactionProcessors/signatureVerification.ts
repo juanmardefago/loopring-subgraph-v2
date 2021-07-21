@@ -12,6 +12,7 @@ import {
   intToString,
   compoundIdToSortableDecimal
 } from "../index";
+import { TRANSACTION_SIGNATURE_VERIFICATION_TYPENAME } from "../../constants";
 
 // interface SignatureVerification {
 //   owner?: string;
@@ -53,6 +54,7 @@ export function processSignatureVerification(
   block: Block
 ): void {
   let transaction = new SignatureVerification(id);
+  transaction.typename = TRANSACTION_SIGNATURE_VERIFICATION_TYPENAME;
   transaction.internalID = compoundIdToSortableDecimal(id);
   transaction.data = data;
   transaction.block = block.id;

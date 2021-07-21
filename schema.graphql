@@ -253,12 +253,27 @@ type AccountTokenBalance @entity {
   "Link to the Token entity. Holds all details of the token itself."
   token: Token!
 
-  transactions: [Transaction!]! @derivedFrom(field:"tokenBalances")
+  transactions: [Transaction!]! @derivedFrom(field: "tokenBalances")
+}
+
+enum TransactionType {
+  Deposit
+  Withdrawal
+  Transfer
+  SpotTrade
+  AccountUpdate
+  AmmUpdate
+  SignatureVerification
+  # MintNFT
+  # DataNFT
 }
 
 interface Transaction {
   "All transactions IDs follow the same pattern: <BLOCK ID>-<TX INDEX>"
   id: ID!
+
+  "Explicit copy of __typename to make it usable when filtering"
+  typename: TransactionType!
 
   "ID represented as a BigDecimal for sorting purposes"
   internalID: BigDecimal!
@@ -274,6 +289,9 @@ interface Transaction {
 
 type Deposit implements Transaction @entity {
   id: ID!
+
+  "Explicit copy of __typename to make it usable when filtering"
+  typename: TransactionType!
 
   "ID represented as a BigDecimal for sorting purposes"
   internalID: BigDecimal!
@@ -303,6 +321,9 @@ type Deposit implements Transaction @entity {
 
 type Withdrawal implements Transaction @entity {
   id: ID!
+
+  "Explicit copy of __typename to make it usable when filtering"
+  typename: TransactionType!
 
   "ID represented as a BigDecimal for sorting purposes"
   internalID: BigDecimal!
@@ -345,6 +366,9 @@ type Withdrawal implements Transaction @entity {
 
 type Transfer implements Transaction @entity {
   id: ID!
+
+  "Explicit copy of __typename to make it usable when filtering"
+  typename: TransactionType!
 
   "ID represented as a BigDecimal for sorting purposes"
   internalID: BigDecimal!
@@ -392,6 +416,9 @@ type Transfer implements Transaction @entity {
 
 type SpotTrade implements Transaction @entity {
   id: ID!
+
+  "Explicit copy of __typename to make it usable when filtering"
+  typename: TransactionType!
 
   "ID represented as a BigDecimal for sorting purposes"
   internalID: BigDecimal!
@@ -484,6 +511,9 @@ type SpotTrade implements Transaction @entity {
 type AccountUpdate implements Transaction @entity {
   id: ID!
 
+  "Explicit copy of __typename to make it usable when filtering"
+  typename: TransactionType!
+
   "ID represented as a BigDecimal for sorting purposes"
   internalID: BigDecimal!
 
@@ -519,6 +549,9 @@ type AccountUpdate implements Transaction @entity {
 type AmmUpdate implements Transaction @entity {
   id: ID!
 
+  "Explicit copy of __typename to make it usable when filtering"
+  typename: TransactionType!
+
   "ID represented as a BigDecimal for sorting purposes"
   internalID: BigDecimal!
 
@@ -546,6 +579,9 @@ type AmmUpdate implements Transaction @entity {
 type SignatureVerification implements Transaction @entity {
   id: ID!
 
+  "Explicit copy of __typename to make it usable when filtering"
+  typename: TransactionType!
+
   "ID represented as a BigDecimal for sorting purposes"
   internalID: BigDecimal!
 
@@ -570,6 +606,9 @@ type SignatureVerification implements Transaction @entity {
 # type MintNFT implements Transaction @entity {
 #   id: ID!
 #
+#   "Explicit copy of __typename to make it usable when filtering"
+#   typename: TransactionType!
+#
 #   "ID represented as a BigDecimal for sorting purposes"
 #   internalID: BigDecimal!
 #
@@ -582,6 +621,9 @@ type SignatureVerification implements Transaction @entity {
 #
 # type DataNFT implements Transaction @entity {
 #   id: ID!
+#
+#   "Explicit copy of __typename to make it usable when filtering"
+#   typename: TransactionType!
 #
 #   "ID represented as a BigDecimal for sorting purposes"
 #   internalID: BigDecimal!

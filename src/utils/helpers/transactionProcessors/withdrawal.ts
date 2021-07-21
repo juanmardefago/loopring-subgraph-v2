@@ -19,6 +19,7 @@ import {
   getOrCreateAccountTokenBalance,
   compoundIdToSortableDecimal
 } from "../index";
+import { TRANSACTION_WITHDRAWAL_TYPENAME } from "../../constants";
 
 // interface Withdrawal {
 //   type?: number;
@@ -104,6 +105,7 @@ export function processWithdrawal(
   block: Block
 ): void {
   let transaction = new Withdrawal(id);
+  transaction.typename = TRANSACTION_WITHDRAWAL_TYPENAME;
   transaction.internalID = compoundIdToSortableDecimal(id);
   transaction.data = data;
   transaction.block = block.id;

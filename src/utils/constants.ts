@@ -17,6 +17,16 @@ export const TRANSACTION_AMM_UPDATE = "AMM update"
 export const TRANSACTION_SIGNATURE_VERIFICATION = "Signature verification"
 export const TRANSACTION_NFT_MINT = "NFT Mint"
 export const TRANSACTION_NFT_DATA = "NFT Data"
+export const TRANSACTION_NOOP_TYPENAME = "Noop"
+export const TRANSACTION_DEPOSIT_TYPENAME = "Deposit"
+export const TRANSACTION_WITHDRAWAL_TYPENAME = "Withdrawal"
+export const TRANSACTION_TRANSFER_TYPENAME = "Transfer"
+export const TRANSACTION_SPOT_TRADE_TYPENAME = "SpotTrade"
+export const TRANSACTION_ACCOUNT_UPDATE_TYPENAME = "AccountUpdate"
+export const TRANSACTION_AMM_UPDATE_TYPENAME = "AmmUpdate"
+export const TRANSACTION_SIGNATURE_VERIFICATION_TYPENAME = "SignatureVerification"
+export const TRANSACTION_NFT_MINT_TYPENAME = "MintNFT"
+export const TRANSACTION_NFT_DATA_TYPENAME = "DataNFT"
 export const LAUNCH_DAY = 18564; // 1603950102 / 86400. 1603929600 = Thursday, October 29, 2020 0:00:00
 export const LAUNCH_WEEK = 2651;
 export const SECONDS_PER_DAY = 86400;

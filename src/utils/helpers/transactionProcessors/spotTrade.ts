@@ -28,7 +28,7 @@ import {
   calculatePrice,
   compoundIdToSortableDecimal
 } from "../index";
-import { BIGINT_ZERO } from "../../constants";
+import { BIGINT_ZERO, TRANSACTION_SPOT_TRADE_TYPENAME } from "../../constants";
 
 // interface SettlementValues {
 //   fillSA: BN;
@@ -229,6 +229,7 @@ import { BIGINT_ZERO } from "../../constants";
 
 export function processSpotTrade(id: String, data: String, block: Block): void {
   let transaction = new SpotTrade(id);
+  transaction.typename = TRANSACTION_SPOT_TRADE_TYPENAME;
   transaction.internalID = compoundIdToSortableDecimal(id);
   transaction.data = data;
   transaction.block = block.id;

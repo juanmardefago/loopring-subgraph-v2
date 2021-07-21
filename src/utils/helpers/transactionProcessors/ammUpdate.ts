@@ -7,6 +7,7 @@ import {
   intToString,
   compoundIdToSortableDecimal
 } from "../index";
+import { TRANSACTION_AMM_UPDATE_TYPENAME } from "../../constants";
 
 // interface AmmUpdate {
 //   owner?: string;
@@ -65,6 +66,7 @@ import {
 
 export function processAmmUpdate(id: String, data: String, block: Block): void {
   let transaction = new AmmUpdate(id);
+  transaction.typename = TRANSACTION_AMM_UPDATE_TYPENAME;
   transaction.internalID = compoundIdToSortableDecimal(id);
   transaction.data = data;
   transaction.block = block.id;

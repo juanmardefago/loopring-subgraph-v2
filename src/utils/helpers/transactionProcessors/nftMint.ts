@@ -14,6 +14,7 @@ import {
   getOrCreateAccountTokenBalance,
   compoundIdToSortableDecimal
 } from "../index";
+import { TRANSACTION_NFT_MINT_TYPENAME } from "../../constants";
 
 // interface NftMint {
 //   type?: number;
@@ -163,6 +164,7 @@ import {
 
 export function processNFTMint(id: String, data: String, block: Block): void {
   let transaction = new MintNFT(id);
+  transaction.typename = TRANSACTION_NFT_MINT_TYPENAME;
   transaction.internalID = compoundIdToSortableDecimal(id);
   transaction.data = data;
   transaction.block = block.id;

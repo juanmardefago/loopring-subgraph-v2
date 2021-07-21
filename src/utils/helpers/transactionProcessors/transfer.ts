@@ -19,6 +19,7 @@ import {
   getOrCreateAccountTokenBalance,
   compoundIdToSortableDecimal
 } from "../index";
+import { TRANSACTION_TRANSFER_TYPENAME } from "../../constants";
 
 // interface Transfer {
 //   accountFromID?: number;
@@ -108,6 +109,7 @@ import {
 
 export function processTransfer(id: String, data: String, block: Block): void {
   let transaction = new Transfer(id);
+  transaction.typename = TRANSACTION_TRANSFER_TYPENAME;
   transaction.internalID = compoundIdToSortableDecimal(id);
   transaction.data = data;
   transaction.block = block.id;

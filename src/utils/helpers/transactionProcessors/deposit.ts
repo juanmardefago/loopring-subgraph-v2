@@ -14,6 +14,7 @@ import {
   getOrCreateAccountTokenBalance,
   compoundIdToSortableDecimal
 } from "../index";
+import { TRANSACTION_DEPOSIT_TYPENAME } from "../../constants";
 
 // interface Deposit {
 //   to?: string;
@@ -62,6 +63,7 @@ import {
 
 export function processDeposit(id: String, data: String, block: Block): void {
   let transaction = new Deposit(id);
+  transaction.typename = TRANSACTION_DEPOSIT_TYPENAME;
   transaction.internalID = compoundIdToSortableDecimal(id);
   transaction.data = data;
   transaction.block = block.id;

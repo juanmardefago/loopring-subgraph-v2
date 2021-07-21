@@ -13,6 +13,7 @@ import {
   getOrCreateAccountTokenBalance,
   compoundIdToSortableDecimal
 } from "../index";
+import { TRANSACTION_ACCOUNT_UPDATE_TYPENAME } from "../../constants";
 
 // interface AccountUpdate {
 //   owner?: string;
@@ -89,6 +90,7 @@ export function processAccountUpdate(
   block: Block
 ): void {
   let transaction = new AccountUpdate(id);
+  transaction.typename = TRANSACTION_ACCOUNT_UPDATE_TYPENAME;
   transaction.internalID = compoundIdToSortableDecimal(id);
   transaction.data = data;
   transaction.block = block.id;
