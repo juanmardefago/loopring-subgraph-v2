@@ -162,6 +162,9 @@ interface Account {
 
   "L2 transaction that last updated the account entity"
   lastUpdatedAtTransaction: Transaction!
+
+  "L2 transactions that involved this account"
+  transactions: [Transaction!]! @derivedFrom(field: "accounts")
 }
 
 type User implements Account @entity {
@@ -189,6 +192,9 @@ type User implements Account @entity {
 
   "L2 transaction that last updated the account entity"
   lastUpdatedAtTransaction: Transaction!
+
+  "L2 transactions that involved this account"
+  transactions: [Transaction!]! @derivedFrom(field: "accounts")
 }
 
 type Pool implements Account @entity {
@@ -215,6 +221,9 @@ type Pool implements Account @entity {
 
   "L2 transaction that last updated the account entity"
   lastUpdatedAtTransaction: Transaction!
+
+  "L2 transactions that involved this account"
+  transactions: [Transaction!]! @derivedFrom(field: "accounts")
 }
 
 type ProtocolAccount implements Account @entity {
@@ -239,6 +248,9 @@ type ProtocolAccount implements Account @entity {
 
   "L2 transaction that last updated the account entity"
   lastUpdatedAtTransaction: Transaction!
+
+  "L2 transactions that involved this account"
+  transactions: [Transaction!]! @derivedFrom(field: "accounts")
 }
 
 type AccountTokenBalance @entity {
@@ -285,6 +297,8 @@ interface Transaction {
   block: Block!
 
   tokenBalances: [AccountTokenBalance!]
+
+  accounts: [Account!]
 }
 
 type Deposit implements Transaction @entity {
@@ -317,6 +331,8 @@ type Deposit implements Transaction @entity {
   amount: BigInt!
 
   tokenBalances: [AccountTokenBalance!]
+
+  accounts: [Account!]
 }
 
 type Withdrawal implements Transaction @entity {
@@ -362,6 +378,8 @@ type Withdrawal implements Transaction @entity {
   storageID: Int!
 
   tokenBalances: [AccountTokenBalance!]
+
+  accounts: [Account!]
 }
 
 type Transfer implements Transaction @entity {
@@ -412,6 +430,8 @@ type Transfer implements Transaction @entity {
   to: String!
 
   tokenBalances: [AccountTokenBalance!]
+
+  accounts: [Account!]
 }
 
 type SpotTrade implements Transaction @entity {
@@ -506,6 +526,8 @@ type SpotTrade implements Transaction @entity {
   protocolFeeB: BigInt!
 
   tokenBalances: [AccountTokenBalance!]
+
+  accounts: [Account!]
 }
 
 type AccountUpdate implements Transaction @entity {
@@ -544,6 +566,8 @@ type AccountUpdate implements Transaction @entity {
   nonce: Int!
 
   tokenBalances: [AccountTokenBalance!]
+
+  accounts: [Account!]
 }
 
 type AmmUpdate implements Transaction @entity {
@@ -574,6 +598,8 @@ type AmmUpdate implements Transaction @entity {
   balance: BigInt!
 
   tokenBalances: [AccountTokenBalance!]
+
+  accounts: [Account!]
 }
 
 type SignatureVerification implements Transaction @entity {
@@ -601,6 +627,8 @@ type SignatureVerification implements Transaction @entity {
   verificationData: String!
 
   tokenBalances: [AccountTokenBalance!]
+
+  accounts: [Account!]
 }
 # Leaving it commented out to avoid leaking it on the schema until it's implemented
 # type MintNFT implements Transaction @entity {
@@ -617,6 +645,8 @@ type SignatureVerification implements Transaction @entity {
 #   block: Block!
 #
 #   tokenBalances: [AccountTokenBalance!]
+#
+#   accounts: [Account!]
 # }
 #
 # type DataNFT implements Transaction @entity {
@@ -633,6 +663,8 @@ type SignatureVerification implements Transaction @entity {
 #   block: Block!
 #
 #   tokenBalances: [AccountTokenBalance!]
+#
+#   accounts: [Account!]
 # }
 
 type PairDailyData @entity {

@@ -97,7 +97,11 @@ export function processAmmUpdate(id: String, data: String, block: Block): void {
   pool.lastUpdatedAt = transaction.internalID;
   pool.lastUpdatedAtTransaction = transaction.id;
 
+  let accounts = new Array<String>();
+  accounts.push(pool.id);
+
   transaction.pool = pool.id;
+  transaction.accounts = accounts;
 
   pool.save();
   transaction.save();

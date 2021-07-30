@@ -142,6 +142,10 @@ export function processTransfer(id: String, data: String, block: Block): void {
   let fromAccountId = intToString(transaction.accountFromID);
   let toAccountId = intToString(transaction.accountToID);
 
+  let accounts = new Array<String>();
+  accounts.push(fromAccountId);
+  accounts.push(toAccountId);
+
   let token = getToken(intToString(transaction.tokenID)) as Token;
   let feeToken = getToken(intToString(transaction.feeTokenID)) as Token;
 
@@ -216,6 +220,7 @@ export function processTransfer(id: String, data: String, block: Block): void {
   transaction.token = token.id;
   transaction.feeToken = feeToken.id;
   transaction.tokenBalances = tokenBalances;
+  transaction.accounts = accounts;
 
   operatorTokenFeeBalance.save();
   transaction.save();

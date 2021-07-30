@@ -121,6 +121,10 @@ export function processAccountUpdate(
   user.lastUpdatedAt = transaction.internalID;
   user.lastUpdatedAtTransaction = transaction.id;
 
+  let tokenBalances = new Array<String>();
+  let accounts = new Array<String>();
+  accounts.push(user.id);
+
   let feeToken = getToken(intToString(transaction.feeTokenID)) as Token;
 
   let accountTokenFeeBalance = getOrCreateAccountTokenBalance(
@@ -131,6 +135,7 @@ export function processAccountUpdate(
     transaction.fee
   );
   accountTokenFeeBalance.save();
+  tokenBalances.push(accountTokenFeeBalance.id);
 
   let operatorTokenFeeBalance = getOrCreateAccountTokenBalance(
     intToString(block.operatorAccountID),
@@ -140,9 +145,12 @@ export function processAccountUpdate(
     transaction.fee
   );
   operatorTokenFeeBalance.save();
+  tokenBalances.push(operatorTokenFeeBalance.id);
 
   transaction.user = user.id;
   transaction.feeToken = feeToken.id;
+  transaction.tokenBalances = tokenBalances;
+  transaction.accounts = accounts;
 
   user.save();
   transaction.save();

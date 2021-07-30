@@ -72,6 +72,10 @@ export function processSignatureVerification(
 
   createIfNewAccount(transaction.accountID, transaction.id, transaction.owner);
 
+  let accounts = new Array<String>();
+  accounts.push(accountId);
+
   transaction.account = accountId;
+  transaction.accounts = accounts;
   transaction.save();
 }

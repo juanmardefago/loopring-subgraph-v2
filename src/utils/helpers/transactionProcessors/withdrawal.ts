@@ -133,6 +133,9 @@ export function processWithdrawal(
 
   let accountId = intToString(transaction.fromAccountID);
 
+  let accounts = new Array<String>();
+  accounts.push(accountId);
+
   let token = getToken(intToString(transaction.tokenID)) as Token;
   let feeToken = getToken(intToString(transaction.feeTokenID)) as Token;
 
@@ -193,6 +196,7 @@ export function processWithdrawal(
   transaction.token = token.id;
   transaction.feeToken = feeToken.id;
   transaction.tokenBalances = tokenBalances;
+  transaction.accounts = accounts;
 
   operatorTokenFeeBalance.save();
   transaction.save();

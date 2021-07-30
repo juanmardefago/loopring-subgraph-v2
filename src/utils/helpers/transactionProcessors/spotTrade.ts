@@ -273,6 +273,10 @@ export function processSpotTrade(id: String, data: String, block: Block): void {
   let accountAID = intToString(transaction.accountIdA);
   let accountBID = intToString(transaction.accountIdB);
 
+  let accounts = new Array<String>();
+  accounts.push(accountAID);
+  accounts.push(accountBID);
+
   let tokenA = getToken(intToString(transaction.tokenIDA)) as Token;
   let tokenB = getToken(intToString(transaction.tokenIDB)) as Token;
 
@@ -484,6 +488,7 @@ export function processSpotTrade(id: String, data: String, block: Block): void {
   );
 
   transaction.tokenBalances = tokenBalances;
+  transaction.accounts = accounts;
 
   tokenADailyData.save();
   tokenAWeeklyData.save();
