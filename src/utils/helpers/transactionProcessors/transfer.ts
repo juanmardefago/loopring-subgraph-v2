@@ -1,5 +1,7 @@
 import {
   Transfer,
+  Remove,
+  Add,
   Block,
   Token,
   User,
@@ -19,7 +21,12 @@ import {
   getOrCreateAccountTokenBalance,
   compoundIdToSortableDecimal
 } from "../index";
-import { TRANSACTION_TRANSFER_TYPENAME } from "../../constants";
+import {
+  TRANSACTION_TRANSFER_TYPENAME,
+  TRANSACTION_ADD_TYPENAME,
+  TRANSACTION_REMOVE_TYPENAME,
+  USER_ACCOUNT_THRESHOLD
+} from "../../constants";
 
 // interface Transfer {
 //   accountFromID?: number;
@@ -109,11 +116,6 @@ import { TRANSACTION_TRANSFER_TYPENAME } from "../../constants";
 
 export function processTransfer(id: String, data: String, block: Block): void {
   let transaction = new Transfer(id);
-  transaction.typename = TRANSACTION_TRANSFER_TYPENAME;
-  transaction.internalID = compoundIdToSortableDecimal(id);
-  transaction.data = data;
-  transaction.block = block.id;
-
   let offset = 1;
 
   // Check that this is a conditional update
@@ -141,6 +143,10 @@ export function processTransfer(id: String, data: String, block: Block): void {
 
   let fromAccountId = intToString(transaction.accountFromID);
   let toAccountId = intToString(transaction.accountToID);
+
+  transaction.internalID = compoundIdToSortableDecimal(id);
+  transaction.data = data;
+  transaction.block = block.id;
 
   let accounts = new Array<String>();
   accounts.push(fromAccountId);
@@ -215,13 +221,31 @@ export function processTransfer(id: String, data: String, block: Block): void {
   );
   tokenBalances.push(operatorTokenFeeBalance.id);
 
-  transaction.toAccount = toAccountId;
-  transaction.fromAccount = fromAccountId;
   transaction.token = token.id;
   transaction.feeToken = feeToken.id;
   transaction.tokenBalances = tokenBalances;
   transaction.accounts = accounts;
 
   operatorTokenFeeBalance.save();
-  transaction.save();
+
+  // Coerce the type of the Transfer at the end, so we can reuse most of the code with no changes.
+  // This could be a lot cleaner if we could use interfaces in AssemblyScript
+  if (transaction.accountToID > USER_ACCOUNT_THRESHOLD && transaction.accountFromID > USER_ACCOUNT_THRESHOLD) {
+    transaction.fromAccount = fromAccountId;
+    transaction.toAccount = toAccountId;
+    transaction.typename = TRANSACTION_TRANSFER_TYPENAME;
+    transaction.save();
+  } else if (transaction.accountToID < USER_ACCOUNT_THRESHOLD) {
+    let coercedTransaction = transaction as Add;
+    coercedTransaction.account = fromAccountId;
+    coercedTransaction.pool = toAccountId;
+    coercedTransaction.typename = TRANSACTION_ADD_TYPENAME;
+    coercedTransaction.save();
+  } else if (transaction.accountFromID < USER_ACCOUNT_THRESHOLD) {
+    let coercedTransaction = transaction as Remove;
+    coercedTransaction.account = toAccountId;
+    coercedTransaction.pool = fromAccountId;
+    coercedTransaction.typename = TRANSACTION_REMOVE_TYPENAME;
+    coercedTransaction.save();
+  }
 }

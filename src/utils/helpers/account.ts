@@ -6,7 +6,7 @@ import {
 } from "../../../generated/schema";
 import { BigInt, Address, Bytes } from "@graphprotocol/graph-ts";
 import { compoundId, intToString, compoundIdToSortableDecimal } from "./util";
-import { ZERO_ADDRESS, BIGINT_ZERO } from "../constants";
+import { ZERO_ADDRESS, BIGINT_ZERO, USER_ACCOUNT_THRESHOLD } from "../constants";
 
 export function getOrCreateUser(
   id: String,
@@ -95,7 +95,7 @@ export function createIfNewAccount(
   transactionId: String,
   addressString: String
 ): void {
-  if (accountId > 10000) {
+  if (accountId > USER_ACCOUNT_THRESHOLD) {
     getOrCreateUser(intToString(accountId), transactionId, addressString);
   } else {
     getOrCreatePool(intToString(accountId), transactionId, addressString);
