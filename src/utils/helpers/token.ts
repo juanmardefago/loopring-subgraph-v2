@@ -132,6 +132,8 @@ export function getAndUpdateTokenDailyData(
     dailyData.dayEnd = dailyData.dayStart + BigInt.fromI32(SECONDS_PER_DAY);
     dailyData.dayNumber = dayId;
     dailyData.tradedVolume = BIGINT_ZERO;
+    dailyData.tradedVolumeSwap = BIGINT_ZERO;
+    dailyData.tradedVolumeOrderbook = BIGINT_ZERO;
     dailyData.token = entity.id;
   }
 
@@ -156,6 +158,8 @@ export function getAndUpdateTokenWeeklyData(
       weeklyData.weekStart + BigInt.fromI32(SECONDS_PER_WEEK);
     weeklyData.weekNumber = weekId;
     weeklyData.tradedVolume = BIGINT_ZERO;
+    weeklyData.tradedVolumeSwap = BIGINT_ZERO;
+    weeklyData.tradedVolumeOrderbook = BIGINT_ZERO;
     weeklyData.token = entity.id;
   }
 
@@ -185,6 +189,10 @@ export function getAndUpdatePairDailyData(
 
     dailyData.tradedVolumeToken0 = BIGINT_ZERO;
     dailyData.tradedVolumeToken1 = BIGINT_ZERO;
+    dailyData.tradedVolumeToken0Swap = BIGINT_ZERO;
+    dailyData.tradedVolumeToken1Swap = BIGINT_ZERO;
+    dailyData.tradedVolumeToken0Orderbook = BIGINT_ZERO;
+    dailyData.tradedVolumeToken1Orderbook = BIGINT_ZERO;
 
     dailyData.token0PriceOpen = entity.token0Price;
     dailyData.token1PriceOpen = entity.token1Price;
@@ -221,8 +229,6 @@ export function getAndUpdatePairDailyData(
     dailyData.token1PriceHigh = entity.token1Price;
   }
 
-  dailyData.save();
-
   return dailyData as PairDailyData;
 }
 
@@ -250,6 +256,10 @@ export function getAndUpdatePairWeeklyData(
 
     weeklyData.tradedVolumeToken0 = BIGINT_ZERO;
     weeklyData.tradedVolumeToken1 = BIGINT_ZERO;
+    weeklyData.tradedVolumeToken0Swap = BIGINT_ZERO;
+    weeklyData.tradedVolumeToken1Swap = BIGINT_ZERO;
+    weeklyData.tradedVolumeToken0Orderbook = BIGINT_ZERO;
+    weeklyData.tradedVolumeToken1Orderbook = BIGINT_ZERO;
 
     weeklyData.token0PriceOpen = entity.token0Price;
     weeklyData.token1PriceOpen = entity.token1Price;
@@ -285,8 +295,6 @@ export function getAndUpdatePairWeeklyData(
   if (weeklyData.token1PriceHigh < entity.token1Price) {
     weeklyData.token1PriceHigh = entity.token1Price;
   }
-
-  weeklyData.save();
 
   return weeklyData as PairWeeklyData;
 }

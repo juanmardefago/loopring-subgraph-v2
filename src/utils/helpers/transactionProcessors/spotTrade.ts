@@ -1,5 +1,6 @@
 import {
-  SpotTrade,
+  Swap,
+  OrderbookTrade,
   Pair,
   Block,
   Token,
@@ -28,7 +29,12 @@ import {
   calculatePrice,
   compoundIdToSortableDecimal
 } from "../index";
-import { BIGINT_ZERO, TRANSACTION_SPOT_TRADE_TYPENAME } from "../../constants";
+import {
+  BIGINT_ZERO,
+  TRANSACTION_AMM_SWAP_TYPENAME,
+  TRANSACTION_ORDERBOOK_TRADE_TYPENAME,
+  USER_ACCOUNT_THRESHOLD
+} from "../../constants";
 
 // interface SettlementValues {
 //   fillSA: BN;
@@ -228,8 +234,7 @@ import { BIGINT_ZERO, TRANSACTION_SPOT_TRADE_TYPENAME } from "../../constants";
 // }
 
 export function processSpotTrade(id: String, data: String, block: Block): void {
-  let transaction = new SpotTrade(id);
-  transaction.typename = TRANSACTION_SPOT_TRADE_TYPENAME;
+  let transaction = new OrderbookTrade(id);
   transaction.internalID = compoundIdToSortableDecimal(id);
   transaction.data = data;
   transaction.block = block.id;
@@ -280,8 +285,6 @@ export function processSpotTrade(id: String, data: String, block: Block): void {
   let tokenA = getToken(intToString(transaction.tokenIDA)) as Token;
   let tokenB = getToken(intToString(transaction.tokenIDB)) as Token;
 
-  transaction.accountA = accountAID;
-  transaction.accountB = accountBID;
   transaction.tokenA = tokenA.id;
   transaction.tokenB = tokenB.id;
 
@@ -461,13 +464,13 @@ export function processSpotTrade(id: String, data: String, block: Block): void {
     tokenB as Token,
     block.timestamp
   );
-  getAndUpdatePairDailyData(
+  let pairDailyData = getAndUpdatePairDailyData(
     pair as Pair,
     token0Amount,
     token1Amount,
     block.timestamp
   );
-  getAndUpdatePairWeeklyData(
+  let pairWeeklyData = getAndUpdatePairWeeklyData(
     pair as Pair,
     token0Amount,
     token1Amount,
@@ -490,6 +493,102 @@ export function processSpotTrade(id: String, data: String, block: Block): void {
   transaction.tokenBalances = tokenBalances;
   transaction.accounts = accounts;
 
+  // Coerce the type of the Trade at the end, so we can reuse most of the code with no changes.
+  // This could be a lot cleaner if we could use interfaces in AssemblyScript
+  // After that we also need to update the breakdowns for every statistic we track
+  // on the various core, daily and weekly entities.
+  if (
+    transaction.accountIdA < USER_ACCOUNT_THRESHOLD ||
+    transaction.accountIdB < USER_ACCOUNT_THRESHOLD
+  ) {
+    let coercedTransaction = transaction as Swap;
+    coercedTransaction.pool =
+      transaction.accountIdA < transaction.accountIdB ? accountAID : accountBID;
+    coercedTransaction.account =
+      transaction.accountIdA < transaction.accountIdB ? accountBID : accountAID;
+    coercedTransaction.typename = TRANSACTION_AMM_SWAP_TYPENAME;
+    coercedTransaction.save();
+
+    tokenADailyData.tradedVolumeSwap = tokenADailyData.tradedVolumeSwap.plus(
+      transaction.fillSA
+    );
+    tokenAWeeklyData.tradedVolumeSwap = tokenAWeeklyData.tradedVolumeSwap.plus(
+      transaction.fillSA
+    );
+    tokenBDailyData.tradedVolumeSwap = tokenBDailyData.tradedVolumeSwap.plus(
+      transaction.fillSB
+    );
+    tokenBWeeklyData.tradedVolumeSwap = tokenBWeeklyData.tradedVolumeSwap.plus(
+      transaction.fillSB
+    );
+
+    tokenA.tradedVolumeSwap = tokenA.tradedVolumeSwap.plus(transaction.fillSA);
+    tokenB.tradedVolumeSwap = tokenB.tradedVolumeSwap.plus(transaction.fillSB);
+
+    pairDailyData.tradedVolumeToken0Swap = pairDailyData.tradedVolumeToken0Swap.plus(
+      token0Amount
+    );
+    pairDailyData.tradedVolumeToken1Swap = pairDailyData.tradedVolumeToken1Swap.plus(
+      token1Amount
+    );
+    pairWeeklyData.tradedVolumeToken0Swap = pairWeeklyData.tradedVolumeToken0Swap.plus(
+      token0Amount
+    );
+    pairWeeklyData.tradedVolumeToken1Swap = pairWeeklyData.tradedVolumeToken1Swap.plus(
+      token1Amount
+    );
+
+    pair.tradedVolumeToken0Swap = pair.tradedVolumeToken0Swap.plus(
+      token0Amount
+    );
+    pair.tradedVolumeToken1Swap = pair.tradedVolumeToken1Swap.plus(
+      token1Amount
+    );
+  } else {
+    transaction.accountA = accountAID;
+    transaction.accountB = accountBID;
+    transaction.typename = TRANSACTION_ORDERBOOK_TRADE_TYPENAME;
+    transaction.save();
+
+    tokenADailyData.tradedVolumeOrderbook = tokenADailyData.tradedVolumeOrderbook.plus(
+      transaction.fillSA
+    );
+    tokenAWeeklyData.tradedVolumeOrderbook = tokenAWeeklyData.tradedVolumeOrderbook.plus(
+      transaction.fillSA
+    );
+    tokenBDailyData.tradedVolumeOrderbook = tokenBDailyData.tradedVolumeOrderbook.plus(
+      transaction.fillSB
+    );
+    tokenBWeeklyData.tradedVolumeOrderbook = tokenBWeeklyData.tradedVolumeOrderbook.plus(
+      transaction.fillSB
+    );
+
+    tokenA.tradedVolumeOrderbook = tokenA.tradedVolumeOrderbook.plus(transaction.fillSA);
+    tokenB.tradedVolumeOrderbook = tokenB.tradedVolumeOrderbook.plus(transaction.fillSB);
+
+    pairDailyData.tradedVolumeToken0Orderbook = pairDailyData.tradedVolumeToken0Orderbook.plus(
+      token0Amount
+    );
+    pairDailyData.tradedVolumeToken1Orderbook = pairDailyData.tradedVolumeToken1Orderbook.plus(
+      token1Amount
+    );
+    pairWeeklyData.tradedVolumeToken0Orderbook = pairWeeklyData.tradedVolumeToken0Orderbook.plus(
+      token0Amount
+    );
+    pairWeeklyData.tradedVolumeToken1Orderbook = pairWeeklyData.tradedVolumeToken1Orderbook.plus(
+      token1Amount
+    );
+
+    pair.tradedVolumeToken0Orderbook = pair.tradedVolumeToken0Orderbook.plus(
+      token0Amount
+    );
+    pair.tradedVolumeToken1Orderbook = pair.tradedVolumeToken1Orderbook.plus(
+      token1Amount
+    );
+  }
+
+  pairDailyData.save();
+  pairWeeklyData.save();
   tokenADailyData.save();
   tokenAWeeklyData.save();
   tokenBDailyData.save();
@@ -498,7 +597,6 @@ export function processSpotTrade(id: String, data: String, block: Block): void {
   tokenB.save();
   pair.save();
   protocolAccount.save();
-  transaction.save();
 }
 
 function calculateFee(fillB: BigInt, feeBips: BigInt): BigInt {

@@ -48,6 +48,12 @@ type Token @entity {
   "Total traded volume for this token across all token pairs. Denominated in it's own currency"
   tradedVolume: BigInt!
 
+  "Total traded volume for this token across all token pairs. Denominated in it's own currency"
+  tradedVolumeSwap: BigInt!
+
+  "Total traded volume for this token across all token pairs. Denominated in it's own currency"
+  tradedVolumeOrderbook: BigInt!
+
   dailyEntities: [TokenDailyData!]! @derivedFrom(field: "token")
   weeklyEntities: [TokenWeeklyData!]! @derivedFrom(field: "token")
 }
@@ -69,13 +75,26 @@ type Pair @entity {
   "Last price of Token 1. Denominated in Token 0"
   token1Price: BigInt!
 
-  "Total traded volume of token 0 within this pair. Denominated in it's own currency"
+  "Total traded volume of token0 within this pair. Includes both Swaps and Orderbook trades. Denominated in it's own currency"
   tradedVolumeToken0: BigInt!
 
-  "Total traded volume of token 1 within this pair. Denominated in it's own currency"
+  "Total traded volume of token1 within this pair. Includes both Swaps and Orderbook trades. Denominated in it's own currency"
   tradedVolumeToken1: BigInt!
 
-  trades: [SpotTrade!]! @derivedFrom(field: "pair")
+  "Total traded volume of token0 within this pair exclusively on Swaps. Denominated in it's own currency"
+  tradedVolumeToken0Swap: BigInt!
+
+  "Total traded volume of token1 within this pair exclusively on Swaps. Denominated in it's own currency"
+  tradedVolumeToken1Swap: BigInt!
+
+  "Total traded volume of token0 within this pair exclusively on Orderbook trades. Denominated in it's own currency"
+  tradedVolumeToken0Orderbook: BigInt!
+
+  "Total traded volume of token1 within this pair exclusively on Orderbook trades. Denominated in it's own currency"
+  tradedVolumeToken1Orderbook: BigInt!
+
+  swaps: [Swap!]! @derivedFrom(field: "pair")
+  trades: [OrderbookTrade!]! @derivedFrom(field: "pair")
 
   dailyEntities: [PairDailyData!]! @derivedFrom(field: "pair")
   weeklyEntities: [PairWeeklyData!]! @derivedFrom(field: "pair")
@@ -540,7 +559,7 @@ type Remove implements Transaction @entity {
   accounts: [Account!]
 }
 
-type SpotTrade implements Transaction @entity {
+type OrderbookTrade implements Transaction @entity {
   id: ID!
 
   "Explicit copy of __typename to make it usable when filtering"
@@ -557,6 +576,102 @@ type SpotTrade implements Transaction @entity {
   accountA: Account!
   "Account entity B"
   accountB: Account!
+
+  "Token A. Supplied by Account A"
+  tokenA: Token!
+  "Token B. Supplied by Account B"
+  tokenB: Token!
+
+  "Price for 1 unit of token A for this trade. Denominated in token B"
+  tokenAPrice: BigInt!
+  "Price for 1 unit of token B for this trade. Denominated in token A"
+  tokenBPrice: BigInt!
+
+  "Standardized Pair entity for this trade"
+  pair: Pair!
+
+  # Raw data parsed from the L2 data
+  "[RAW L2 DATA] StorageID for account A"
+  storageIdA: Int!
+  "[RAW L2 DATA] StorageID for account B"
+  storageIdB: Int!
+
+  "[RAW L2 DATA] Account ID of account A"
+  accountIdA: Int!
+  "[RAW L2 DATA] Account ID of account B"
+  accountIdB: Int!
+
+  "[RAW L2 DATA] Token ID of token A"
+  tokenIDA: Int!
+  "[RAW L2 DATA] Token ID of token B"
+  tokenIDB: Int!
+
+  "[RAW L2 DATA] Float encoded value for fillSA represented as an Int"
+  fFillSA: Int!
+  "[RAW L2 DATA] Float encoded value for fillSB represented as an Int"
+  fFillSB: Int!
+
+  "[RAW L2 DATA] Amount of token A sold by Account A"
+  fillSA: BigInt!
+  "[RAW L2 DATA] Amount of token B sold by Account B"
+  fillSB: BigInt!
+
+  "[RAW L2 DATA] Order data A"
+  orderDataA: Int!
+  "[RAW L2 DATA] Order data B"
+  orderDataB: Int!
+
+  "[RAW L2 DATA] Limit mask value for order A"
+  limitMaskA: BigInt!
+  "[RAW L2 DATA] Fee bips for order A"
+  feeBipsA: BigInt!
+  "[RAW L2 DATA] Is fill amount for buy or sell for order A"
+  fillAmountBorSA: Boolean!
+
+  "[RAW L2 DATA] Limit mask value for order B"
+  limitMaskB: BigInt!
+  "[RAW L2 DATA] Fee bips for order B"
+  feeBipsB: BigInt!
+  "[RAW L2 DATA] Is fill amount for buy or sell for order B"
+  fillAmountBorSB: Boolean!
+
+  "[RAW L2 DATA] Amount of token B bought by Account A"
+  fillBA: BigInt!
+  "[RAW L2 DATA] Amount of token A bought by Account B"
+  fillBB: BigInt!
+
+  "[RAW L2 DATA] Fee paid by Account A with Token B"
+  feeA: BigInt!
+  "[RAW L2 DATA] Protocol fees paid by Account A"
+  protocolFeeA: BigInt!
+
+  "[RAW L2 DATA] Fee paid by Account B with token A"
+  feeB: BigInt!
+  "[RAW L2 DATA] Protocol fees paid by Account B"
+  protocolFeeB: BigInt!
+
+  tokenBalances: [AccountTokenBalance!]
+
+  accounts: [Account!]
+}
+
+type Swap implements Transaction @entity {
+  id: ID!
+
+  "Explicit copy of __typename to make it usable when filtering"
+  typename: TransactionType!
+
+  "ID represented as a BigDecimal for sorting purposes"
+  internalID: BigDecimal!
+
+  data: String!
+
+  block: Block!
+
+  "Account that swapped the tokens"
+  account: Account!
+  "AMM Pool that facilitated the swap"
+  pool: Pool!
 
   "Token A. Supplied by Account A"
   tokenA: Token!
@@ -812,8 +927,23 @@ type PairDailyData @entity {
   "Price for token 1 at the start of the time interval"
   token1PriceOpen: BigInt!
 
+  "Volume traded for the token0 of the pair. Includes both Swaps and Orderbook trades"
   tradedVolumeToken0: BigInt!
+
+  "Volume traded for the token1 of the pair. Includes both Swaps and Orderbook trades"
   tradedVolumeToken1: BigInt!
+
+  "Volume traded for the token0 of the pair exclusively on Swaps"
+  tradedVolumeToken0Swap: BigInt!
+
+  "Volume traded for the token1 of the pair exclusively on Swaps"
+  tradedVolumeToken1Swap: BigInt!
+
+  "Volume traded for the token0 of the pair exclusively on Orderbook trades"
+  tradedVolumeToken0Orderbook: BigInt!
+
+  "Volume traded for the token1 of the pair exclusively on Orderbook trades"
+  tradedVolumeToken1Orderbook: BigInt!
 }
 
 type TokenDailyData @entity {
@@ -831,7 +961,14 @@ type TokenDailyData @entity {
   "Day number is the amount of days since the start block of Loopring 3.6 (block 11149814)"
   dayNumber: Int!
 
+  "Volume traded for the token. Includes both Swaps and Orderbook trades"
   tradedVolume: BigInt!
+
+  "Volume traded for the token exclusively on Swaps"
+  tradedVolumeSwap: BigInt!
+
+  "Volume traded for the token exclusively on Orderbook trades"
+  tradedVolumeOrderbook: BigInt!
 }
 
 type PairWeeklyData @entity {
@@ -873,8 +1010,23 @@ type PairWeeklyData @entity {
   "Price for token 1 at the start of the time interval"
   token1PriceOpen: BigInt!
 
+  "Volume traded for the token0 of the pair. Includes both Swaps and Orderbook trades"
   tradedVolumeToken0: BigInt!
+
+  "Volume traded for the token1 of the pair. Includes both Swaps and Orderbook trades"
   tradedVolumeToken1: BigInt!
+
+  "Volume traded for the token0 of the pair exclusively on Swaps"
+  tradedVolumeToken0Swap: BigInt!
+
+  "Volume traded for the token1 of the pair exclusively on Swaps"
+  tradedVolumeToken1Swap: BigInt!
+
+  "Volume traded for the token0 of the pair exclusively on Orderbook trades"
+  tradedVolumeToken0Orderbook: BigInt!
+
+  "Volume traded for the token1 of the pair exclusively on Orderbook trades"
+  tradedVolumeToken1Orderbook: BigInt!
 }
 
 type TokenWeeklyData @entity {
@@ -892,5 +1044,12 @@ type TokenWeeklyData @entity {
   "Week number is the amount of weeks since the start block of Loopring 3.6 (block 11149814)"
   weekNumber: Int!
 
+  "Volume traded for the token. Includes both Swaps and Orderbook trades"
   tradedVolume: BigInt!
+
+  "Volume traded for the token exclusively on Swaps"
+  tradedVolumeSwap: BigInt!
+
+  "Volume traded for the token exclusively on Orderbook trades"
+  tradedVolumeOrderbook: BigInt!
 }
