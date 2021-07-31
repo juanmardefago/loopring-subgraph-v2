@@ -50,6 +50,8 @@ export function getOrCreateToken(
     }
 
     token.tradedVolume = BIGINT_ZERO;
+    token.tradedVolumeSwap = BIGINT_ZERO;
+    token.tradedVolumeOrderbook = BIGINT_ZERO;
   }
 
   return token as Token;
@@ -87,7 +89,7 @@ export function getOrCreatePair(
 
   if (pair == null && createIfNotFound) {
     pair = new Pair(id);
-    pair.internalID = compoundIdToSortableDecimal(id)
+    pair.internalID = compoundIdToSortableDecimal(id);
 
     // Link them in the same order as the ID.
     if (tokenAId < tokenBId) {
@@ -100,6 +102,10 @@ export function getOrCreatePair(
 
     pair.tradedVolumeToken0 = BIGINT_ZERO;
     pair.tradedVolumeToken1 = BIGINT_ZERO;
+    pair.tradedVolumeToken0Swap = BIGINT_ZERO;
+    pair.tradedVolumeToken1Swap = BIGINT_ZERO;
+    pair.tradedVolumeToken0Orderbook = BIGINT_ZERO;
+    pair.tradedVolumeToken1Orderbook = BIGINT_ZERO;
   }
 
   return pair as Pair;
