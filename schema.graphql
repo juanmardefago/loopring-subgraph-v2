@@ -291,7 +291,8 @@ enum TransactionType {
   Deposit
   Withdrawal
   Transfer
-  SpotTrade
+  Swap
+  OrderbookTrade
   AccountUpdate
   AmmUpdate
   SignatureVerification
