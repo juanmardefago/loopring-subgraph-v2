@@ -23,23 +23,37 @@ export function handleTokenRegistered(event: TokenRegistered): void {
   let proxy = getProxy();
 
   token.exchange = proxy.currentImplementation;
+  proxy.tokenCount = proxy.tokenCount.plus(BIGINT_ONE);
 
   token.save();
+  proxy.save();
 }
 
 export function handleSubmitBlocksV1(call: SubmitBlocksCall): void {
-  handleSubmitBlocks(call as ethereum.Call, call.inputs.blocks as Array<SubmitBlocksCallBlocksStruct>);
+  handleSubmitBlocks(
+    call as ethereum.Call,
+    call.inputs.blocks as Array<SubmitBlocksCallBlocksStruct>
+  );
 }
 
 export function handleSubmitBlocksV2(call: SubmitBlocks1Call): void {
-  handleSubmitBlocks(call as ethereum.Call, call.inputs.blocks as Array<SubmitBlocksCallBlocksStruct>);
+  handleSubmitBlocks(
+    call as ethereum.Call,
+    call.inputs.blocks as Array<SubmitBlocksCallBlocksStruct>
+  );
 }
 
 export function handleSubmitBlocksV3(call: SubmitBlocks2Call): void {
-  handleSubmitBlocks(call as ethereum.Call, call.inputs.blocks as Array<SubmitBlocksCallBlocksStruct>);
+  handleSubmitBlocks(
+    call as ethereum.Call,
+    call.inputs.blocks as Array<SubmitBlocksCallBlocksStruct>
+  );
 }
 
-function handleSubmitBlocks(call: ethereum.Call, blockArray: Array<SubmitBlocksCallBlocksStruct>): void {
+function handleSubmitBlocks(
+  call: ethereum.Call,
+  blockArray: Array<SubmitBlocksCallBlocksStruct>
+): void {
   let proxy = getProxy();
   for (let i = 0; i < blockArray.length; i++) {
     proxy.blockCount = proxy.blockCount.plus(BIGINT_ONE);

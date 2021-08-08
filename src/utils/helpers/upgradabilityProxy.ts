@@ -7,6 +7,7 @@ export function getProxy(): Proxy {
 
   if (proxy == null) {
     proxy = new Proxy("0");
+    proxy.tokenCount = BIGINT_ZERO;
     proxy.blockCount = BIGINT_ZERO;
     proxy.transactionCount = BIGINT_ZERO;
     proxy.depositCount = BIGINT_ZERO

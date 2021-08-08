@@ -8,6 +8,9 @@ type Proxy @entity {
   "List of all historical Exchange entities"
   implementations: [Exchange!]! @derivedFrom(field: "proxy")
 
+  "Total amount of tokens supported"
+  tokenCount: BigInt!
+
   "Total amount of blocks processed"
   blockCount: BigInt!
 
