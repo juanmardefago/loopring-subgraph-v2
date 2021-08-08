@@ -1,4 +1,4 @@
-import { Block } from "../../../generated/schema";
+import { Block, Proxy } from "../../../generated/schema";
 import { Address, BigInt, log } from "@graphprotocol/graph-ts";
 import { DEFAULT_DECIMALS } from "../../utils/decimals";
 import {
@@ -20,14 +20,24 @@ export function getOrCreateBlock(internalID: BigInt): Block {
     block = new Block(id);
     block.internalID = internalID
     block.transactionCount = BIGINT_ZERO
+    block.depositCount = BIGINT_ZERO
+    block.withdrawalCount = BIGINT_ZERO
+    block.transferCount = BIGINT_ZERO
+    block.addCount = BIGINT_ZERO
+    block.removeCount = BIGINT_ZERO
+    block.orderbookTradeCount = BIGINT_ZERO
+    block.swapCount = BIGINT_ZERO
+    block.accountUpdateCount = BIGINT_ZERO
+    block.ammUpdateCount = BIGINT_ZERO
+    block.signatureVerificationCount = BIGINT_ZERO
+    // block.nftMintCount = BIGINT_ZERO
+    // block.nftDataCount = BIGINT_ZERO
   }
 
   return block as Block;
 }
 
-export function processBlockData(block: Block): Block {
-  let proxy = getProxy()
-
+export function processBlockData(block: Block, proxy: Proxy): Block {
   let data = block.data.slice(2); // Remove the 0x beginning of the hex string
   let offset = 0;
 
@@ -55,14 +65,12 @@ export function processBlockData(block: Block): Block {
     let txData = txData1.concat(txData2);
 
     let txId = compoundId(block.id, intToString(i));
-    let txValid = processTransactionData(txId, txData, block);
+    let txValid = processTransactionData(txId, txData, block, proxy);
     if (txValid) {
       proxy.transactionCount = proxy.transactionCount + BIGINT_ONE
       block.transactionCount = block.transactionCount + BIGINT_ONE
     }
   }
-
-  proxy.save()
 
   return block as Block;
 }

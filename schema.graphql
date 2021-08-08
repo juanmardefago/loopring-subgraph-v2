@@ -13,6 +13,42 @@ type Proxy @entity {
 
   "Total amount of transactions processed across all blocks"
   transactionCount: BigInt!
+
+  "Total amount of Deposit transactions processed across all blocks"
+  depositCount: BigInt!
+
+  "Total amount of Withdrawal transactions processed across all blocks"
+  withdrawalCount: BigInt!
+
+  "Total amount of Transfer transactions processed across all blocks"
+  transferCount: BigInt!
+
+  "Total amount of Add transactions processed across all blocks"
+  addCount: BigInt!
+
+  "Total amount of Remove transactions processed across all blocks"
+  removeCount: BigInt!
+
+  "Total amount of OrderbookTrade transactions processed across all blocks"
+  orderbookTradeCount: BigInt!
+
+  "Total amount of Swap transactions processed across all blocks"
+  swapCount: BigInt!
+
+  "Total amount of AccountUpdate transactions processed across all blocks"
+  accountUpdateCount: BigInt!
+
+  "Total amount of AMMUpdate transactions processed across all blocks"
+  ammUpdateCount: BigInt!
+
+  "Total amount of SignatureVerification transactions processed across all blocks"
+  signatureVerificationCount: BigInt!
+
+  # "Total amount of NFT Mint transactions processed across all blocks"
+  # nftMintCount: BigInt!
+
+  # "Total amount of NFT Data transactions processed across all blocks"
+  # nftDataCount: BigInt!
 }
 
 type Exchange @entity {
@@ -155,6 +191,42 @@ type Block @entity {
 
   "Total amount of transactions processed on this block. Should coincide with the lenght of the transactions list"
   transactionCount: BigInt!
+
+  "Total amount of Deposit transactions processed across all blocks"
+  depositCount: BigInt!
+
+  "Total amount of Withdrawal transactions processed across all blocks"
+  withdrawalCount: BigInt!
+
+  "Total amount of Transfer transactions processed across all blocks"
+  transferCount: BigInt!
+
+  "Total amount of Add transactions processed across all blocks"
+  addCount: BigInt!
+
+  "Total amount of Remove transactions processed across all blocks"
+  removeCount: BigInt!
+
+  "Total amount of OrderbookTrade transactions processed across all blocks"
+  orderbookTradeCount: BigInt!
+
+  "Total amount of Swap transactions processed across all blocks"
+  swapCount: BigInt!
+
+  "Total amount of AccountUpdate transactions processed across all blocks"
+  accountUpdateCount: BigInt!
+
+  "Total amount of AMMUpdate transactions processed across all blocks"
+  ammUpdateCount: BigInt!
+
+  "Total amount of SignatureVerification transactions processed across all blocks"
+  signatureVerificationCount: BigInt!
+
+  # "Total amount of NFT Mint transactions processed across all blocks"
+  # nftMintCount: BigInt!
+
+  # "Total amount of NFT Data transactions processed across all blocks"
+  # nftDataCount: BigInt!
 }
 
 interface Account {

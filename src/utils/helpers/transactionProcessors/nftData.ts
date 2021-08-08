@@ -3,7 +3,7 @@
 //   Block,
 //   Token,
 //   User,
-//   Pool
+//   Pool, Proxy
 // } from "../../../../generated/schema";
 import { BigInt, Address, Bytes } from "@graphprotocol/graph-ts";
 import { extractData, extractBigInt, extractInt } from "../data";
@@ -14,7 +14,7 @@ import {
   getOrCreateAccountTokenBalance,
   compoundIdToSortableDecimal
 } from "../index";
-import { TRANSACTION_NFT_DATA_TYPENAME } from "../../constants";
+import { TRANSACTION_NFT_DATA_TYPENAME, BIGINT_ONE } from "../../constants";
 
 // interface NftData {
 //   type?: number;
@@ -68,7 +68,15 @@ import { TRANSACTION_NFT_DATA_TYPENAME } from "../../constants";
 //   }
 // }
 
-export function processNFTData(id: String, data: String, block: Block): void {
+export function processNFTData(
+  id: String,
+  data: String,
+  block: Block,
+  proxy: Proxy
+): void {
+  proxy.nftDataCount = proxy.nftDataCount.plus(BIGINT_ONE);
+  block.nftDataCount = block.nftDataCount.plus(BIGINT_ONE);
+
   let transaction = new DataNFT(id);
   transaction.typename = TRANSACTION_NFT_DATA_TYPENAME;
   transaction.internalID = compoundIdToSortableDecimal(id);

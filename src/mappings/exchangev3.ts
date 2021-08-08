@@ -6,7 +6,7 @@ import {
   SubmitBlocks2Call,
   SubmitBlocksCallBlocksStruct
 } from "../../generated/OwnedUpgradabilityProxy/OwnedUpgradabilityProxy";
-import { Block } from "../../generated/schema";
+import { Block, Proxy } from "../../generated/schema";
 import {
   getOrCreateToken,
   getProxy,
@@ -40,12 +40,9 @@ export function handleSubmitBlocksV3(call: SubmitBlocks2Call): void {
 }
 
 function handleSubmitBlocks(call: ethereum.Call, blockArray: Array<SubmitBlocksCallBlocksStruct>): void {
-
-
+  let proxy = getProxy();
   for (let i = 0; i < blockArray.length; i++) {
-    let proxy = getProxy();
     proxy.blockCount = proxy.blockCount.plus(BIGINT_ONE);
-    proxy.save();
 
     let blockData = blockArray[i];
     let block = getOrCreateBlock(proxy.blockCount);
@@ -67,8 +64,9 @@ function handleSubmitBlocks(call: ethereum.Call, blockArray: Array<SubmitBlocksC
     block.storeBlockInfoOnchain = blockData.storeBlockInfoOnchain;
     block.offchainData = blockData.offchainData;
 
-    block = processBlockData(block as Block);
+    block = processBlockData(block as Block, proxy as Proxy);
 
     block.save();
   }
+  proxy.save();
 }

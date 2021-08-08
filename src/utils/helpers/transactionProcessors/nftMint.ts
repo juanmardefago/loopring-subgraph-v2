@@ -3,7 +3,7 @@
 //   Block,
 //   Token,
 //   User,
-//   Pool
+//   Pool, Proxy
 // } from "../../../../generated/schema";
 import { BigInt, Address, Bytes } from "@graphprotocol/graph-ts";
 import { extractData, extractBigInt, extractInt } from "../data";
@@ -14,7 +14,7 @@ import {
   getOrCreateAccountTokenBalance,
   compoundIdToSortableDecimal
 } from "../index";
-import { TRANSACTION_NFT_MINT_TYPENAME } from "../../constants";
+import { TRANSACTION_NFT_MINT_TYPENAME, BIGINT_ONE } from "../../constants";
 
 // interface NftMint {
 //   type?: number;
@@ -162,7 +162,15 @@ import { TRANSACTION_NFT_MINT_TYPENAME } from "../../constants";
 //   }
 // }
 
-export function processNFTMint(id: String, data: String, block: Block): void {
+export function processNFTMint(
+  id: String,
+  data: String,
+  block: Block,
+  proxy: Proxy
+): void {
+  proxy.nftMintCount = proxy.nftMintCount.plus(BIGINT_ONE);
+  block.nftMintCount = block.nftMintCount.plus(BIGINT_ONE);
+
   let transaction = new MintNFT(id);
   transaction.typename = TRANSACTION_NFT_MINT_TYPENAME;
   transaction.internalID = compoundIdToSortableDecimal(id);

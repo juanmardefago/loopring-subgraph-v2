@@ -5,7 +5,8 @@ import {
   Block,
   Token,
   User,
-  Pool
+  Pool,
+  Proxy
 } from "../../../../generated/schema";
 import { BigInt, Address, Bytes } from "@graphprotocol/graph-ts";
 import {
@@ -33,7 +34,8 @@ import {
   BIGINT_ZERO,
   TRANSACTION_AMM_SWAP_TYPENAME,
   TRANSACTION_ORDERBOOK_TRADE_TYPENAME,
-  USER_ACCOUNT_THRESHOLD
+  USER_ACCOUNT_THRESHOLD,
+  BIGINT_ONE
 } from "../../constants";
 
 // interface SettlementValues {
@@ -233,7 +235,12 @@ import {
 //   }
 // }
 
-export function processSpotTrade(id: String, data: String, block: Block): void {
+export function processSpotTrade(
+  id: String,
+  data: String,
+  block: Block,
+  proxy: Proxy
+): void {
   let transaction = new OrderbookTrade(id);
   transaction.internalID = compoundIdToSortableDecimal(id);
   transaction.data = data;
@@ -501,6 +508,9 @@ export function processSpotTrade(id: String, data: String, block: Block): void {
     transaction.accountIdA < USER_ACCOUNT_THRESHOLD ||
     transaction.accountIdB < USER_ACCOUNT_THRESHOLD
   ) {
+    proxy.swapCount = proxy.swapCount.plus(BIGINT_ONE);
+    block.swapCount = block.swapCount.plus(BIGINT_ONE);
+
     let coercedTransaction = transaction as Swap;
     coercedTransaction.pool =
       transaction.accountIdA < transaction.accountIdB ? accountAID : accountBID;
@@ -545,6 +555,9 @@ export function processSpotTrade(id: String, data: String, block: Block): void {
       token1Amount
     );
   } else {
+    proxy.orderbookTradeCount = proxy.orderbookTradeCount.plus(BIGINT_ONE);
+    block.orderbookTradeCount = block.orderbookTradeCount.plus(BIGINT_ONE);
+
     transaction.accountA = accountAID;
     transaction.accountB = accountBID;
     transaction.typename = TRANSACTION_ORDERBOOK_TRADE_TYPENAME;
@@ -563,8 +576,12 @@ export function processSpotTrade(id: String, data: String, block: Block): void {
       transaction.fillSB
     );
 
-    tokenA.tradedVolumeOrderbook = tokenA.tradedVolumeOrderbook.plus(transaction.fillSA);
-    tokenB.tradedVolumeOrderbook = tokenB.tradedVolumeOrderbook.plus(transaction.fillSB);
+    tokenA.tradedVolumeOrderbook = tokenA.tradedVolumeOrderbook.plus(
+      transaction.fillSA
+    );
+    tokenB.tradedVolumeOrderbook = tokenB.tradedVolumeOrderbook.plus(
+      transaction.fillSB
+    );
 
     pairDailyData.tradedVolumeToken0Orderbook = pairDailyData.tradedVolumeToken0Orderbook.plus(
       token0Amount

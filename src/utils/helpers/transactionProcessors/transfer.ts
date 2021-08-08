@@ -5,7 +5,8 @@ import {
   Block,
   Token,
   User,
-  Pool
+  Pool,
+  Proxy
 } from "../../../../generated/schema";
 import { BigInt, Address, Bytes } from "@graphprotocol/graph-ts";
 import {
@@ -25,7 +26,8 @@ import {
   TRANSACTION_TRANSFER_TYPENAME,
   TRANSACTION_ADD_TYPENAME,
   TRANSACTION_REMOVE_TYPENAME,
-  USER_ACCOUNT_THRESHOLD
+  USER_ACCOUNT_THRESHOLD,
+  BIGINT_ONE
 } from "../../constants";
 
 // interface Transfer {
@@ -114,7 +116,12 @@ import {
 //   }
 // }
 
-export function processTransfer(id: String, data: String, block: Block): void {
+export function processTransfer(
+  id: String,
+  data: String,
+  block: Block,
+  proxy: Proxy
+): void {
   let transaction = new Transfer(id);
   let offset = 1;
 
@@ -230,18 +237,30 @@ export function processTransfer(id: String, data: String, block: Block): void {
 
   // Coerce the type of the Transfer at the end, so we can reuse most of the code with no changes.
   // This could be a lot cleaner if we could use interfaces in AssemblyScript
-  if (transaction.accountToID > USER_ACCOUNT_THRESHOLD && transaction.accountFromID > USER_ACCOUNT_THRESHOLD) {
+  if (
+    transaction.accountToID > USER_ACCOUNT_THRESHOLD &&
+    transaction.accountFromID > USER_ACCOUNT_THRESHOLD
+  ) {
+    proxy.transferCount = proxy.transferCount.plus(BIGINT_ONE);
+    block.transferCount = block.transferCount.plus(BIGINT_ONE);
+
     transaction.fromAccount = fromAccountId;
     transaction.toAccount = toAccountId;
     transaction.typename = TRANSACTION_TRANSFER_TYPENAME;
     transaction.save();
   } else if (transaction.accountToID < USER_ACCOUNT_THRESHOLD) {
+    proxy.addCount = proxy.addCount.plus(BIGINT_ONE);
+    block.addCount = block.addCount.plus(BIGINT_ONE);
+
     let coercedTransaction = transaction as Add;
     coercedTransaction.account = fromAccountId;
     coercedTransaction.pool = toAccountId;
     coercedTransaction.typename = TRANSACTION_ADD_TYPENAME;
     coercedTransaction.save();
   } else if (transaction.accountFromID < USER_ACCOUNT_THRESHOLD) {
+    proxy.removeCount = proxy.removeCount.plus(BIGINT_ONE);
+    block.removeCount = block.removeCount.plus(BIGINT_ONE);
+
     let coercedTransaction = transaction as Remove;
     coercedTransaction.account = toAccountId;
     coercedTransaction.pool = fromAccountId;

@@ -1,4 +1,4 @@
-import { Token, Exchange, Block } from "../../../generated/schema";
+import { Token, Exchange, Block, Proxy } from "../../../generated/schema";
 import { ERC20 } from "../../../generated/OwnedUpgradabilityProxy/ERC20";
 import { Address, BigInt, log } from "@graphprotocol/graph-ts";
 import { DEFAULT_DECIMALS } from "../../utils/decimals";
@@ -29,30 +29,30 @@ import {
   processNFTData
 } from './transactionProcessors'
 
-export function processTransactionData(id: String, data: String, block: Block): boolean {
+export function processTransactionData(id: String, data: String, block: Block, proxy: Proxy): boolean {
   let txType = getTransactionTypeFromData(data);
 
   if(txType == TRANSACTION_NOOP) {
     // We don't want to count noops here, so we return false to indicate the tx is invalid
     return false
   } else if(txType == TRANSACTION_DEPOSIT) {
-    processDeposit(id, data, block)
+    processDeposit(id, data, block, proxy)
   } else if(txType == TRANSACTION_WITHDRAWAL) {
-    processWithdrawal(id, data, block)
+    processWithdrawal(id, data, block, proxy)
   } else if(txType == TRANSACTION_TRANSFER) {
-    processTransfer(id, data, block)
+    processTransfer(id, data, block, proxy)
   } else if(txType == TRANSACTION_SPOT_TRADE) {
-    processSpotTrade(id, data, block)
+    processSpotTrade(id, data, block, proxy)
   } else if(txType == TRANSACTION_ACCOUNT_UPDATE) {
-    processAccountUpdate(id, data, block)
+    processAccountUpdate(id, data, block, proxy)
   } else if(txType == TRANSACTION_AMM_UPDATE) {
-    processAmmUpdate(id, data, block)
+    processAmmUpdate(id, data, block, proxy)
   } else if(txType == TRANSACTION_SIGNATURE_VERIFICATION) {
-    processSignatureVerification(id, data, block)
+    processSignatureVerification(id, data, block, proxy)
   } else if(txType == TRANSACTION_NFT_MINT) {
-    // processNFTMint(id, data, block)
+    // processNFTMint(id, data, block, proxy)
   } else if(txType == TRANSACTION_NFT_DATA) {
-    // processNFTData(id, data, block)
+    // processNFTData(id, data, block, proxy)
   } else {
     // If we don't know the tx type, we call it invalid
     return false

@@ -9,6 +9,18 @@ export function getProxy(): Proxy {
     proxy = new Proxy("0");
     proxy.blockCount = BIGINT_ZERO;
     proxy.transactionCount = BIGINT_ZERO;
+    proxy.depositCount = BIGINT_ZERO
+    proxy.withdrawalCount = BIGINT_ZERO
+    proxy.transferCount = BIGINT_ZERO
+    proxy.addCount = BIGINT_ZERO
+    proxy.removeCount = BIGINT_ZERO
+    proxy.orderbookTradeCount = BIGINT_ZERO
+    proxy.swapCount = BIGINT_ZERO
+    proxy.accountUpdateCount = BIGINT_ZERO
+    proxy.ammUpdateCount = BIGINT_ZERO
+    proxy.signatureVerificationCount = BIGINT_ZERO
+    // proxy.nftMintCount = BIGINT_ZERO
+    // proxy.nftDataCount = BIGINT_ZERO
 
     proxy.save();
   }

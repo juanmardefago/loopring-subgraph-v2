@@ -3,7 +3,8 @@ import {
   Block,
   Token,
   User,
-  Pool
+  Pool,
+  Proxy
 } from "../../../../generated/schema";
 import { BigInt, Address, Bytes } from "@graphprotocol/graph-ts";
 import {
@@ -102,7 +103,8 @@ import { TRANSACTION_WITHDRAWAL_TYPENAME } from "../../constants";
 export function processWithdrawal(
   id: String,
   data: String,
-  block: Block
+  block: Block,
+  proxy: Proxy
 ): void {
   let transaction = new Withdrawal(id);
   transaction.typename = TRANSACTION_WITHDRAWAL_TYPENAME;

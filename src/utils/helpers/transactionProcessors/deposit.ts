@@ -3,7 +3,8 @@ import {
   Block,
   Token,
   User,
-  Pool
+  Pool,
+  Proxy
 } from "../../../../generated/schema";
 import { BigInt, Address, Bytes } from "@graphprotocol/graph-ts";
 import { extractData, extractBigInt, extractInt } from "../data";
@@ -14,7 +15,7 @@ import {
   getOrCreateAccountTokenBalance,
   compoundIdToSortableDecimal
 } from "../index";
-import { TRANSACTION_DEPOSIT_TYPENAME } from "../../constants";
+import { TRANSACTION_DEPOSIT_TYPENAME, BIGINT_ONE } from "../../constants";
 
 // interface Deposit {
 //   to?: string;
@@ -61,7 +62,15 @@ import { TRANSACTION_DEPOSIT_TYPENAME } from "../../constants";
 //   }
 // }
 
-export function processDeposit(id: String, data: String, block: Block): void {
+export function processDeposit(
+  id: String,
+  data: String,
+  block: Block,
+  proxy: Proxy
+): void {
+  proxy.depositCount = proxy.depositCount.plus(BIGINT_ONE);
+  block.depositCount = block.depositCount.plus(BIGINT_ONE);
+
   let transaction = new Deposit(id);
   transaction.typename = TRANSACTION_DEPOSIT_TYPENAME;
   transaction.internalID = compoundIdToSortableDecimal(id);

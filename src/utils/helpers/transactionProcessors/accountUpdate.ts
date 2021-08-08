@@ -1,4 +1,9 @@
-import { AccountUpdate, Block, Token } from "../../../../generated/schema";
+import {
+  AccountUpdate,
+  Block,
+  Token,
+  Proxy
+} from "../../../../generated/schema";
 import { BigInt, Address, Bytes } from "@graphprotocol/graph-ts";
 import {
   extractData,
@@ -13,7 +18,7 @@ import {
   getOrCreateAccountTokenBalance,
   compoundIdToSortableDecimal
 } from "../index";
-import { TRANSACTION_ACCOUNT_UPDATE_TYPENAME } from "../../constants";
+import { TRANSACTION_ACCOUNT_UPDATE_TYPENAME, BIGINT_ONE } from "../../constants";
 
 // interface AccountUpdate {
 //   owner?: string;
@@ -87,8 +92,12 @@ import { TRANSACTION_ACCOUNT_UPDATE_TYPENAME } from "../../constants";
 export function processAccountUpdate(
   id: String,
   data: String,
-  block: Block
+  block: Block,
+  proxy: Proxy
 ): void {
+  proxy.accountUpdateCount = proxy.accountUpdateCount.plus(BIGINT_ONE);
+  block.accountUpdateCount = block.accountUpdateCount.plus(BIGINT_ONE);
+
   let transaction = new AccountUpdate(id);
   transaction.typename = TRANSACTION_ACCOUNT_UPDATE_TYPENAME;
   transaction.internalID = compoundIdToSortableDecimal(id);

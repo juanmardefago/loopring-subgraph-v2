@@ -1,4 +1,4 @@
-import { AmmUpdate, Block, Token } from "../../../../generated/schema";
+import { AmmUpdate, Block, Token, Proxy } from "../../../../generated/schema";
 import { BigInt, Address, Bytes } from "@graphprotocol/graph-ts";
 import { extractData, extractBigInt, extractInt } from "../data";
 import {
@@ -7,7 +7,7 @@ import {
   intToString,
   compoundIdToSortableDecimal
 } from "../index";
-import { TRANSACTION_AMM_UPDATE_TYPENAME } from "../../constants";
+import { TRANSACTION_AMM_UPDATE_TYPENAME, BIGINT_ONE } from "../../constants";
 
 // interface AmmUpdate {
 //   owner?: string;
@@ -64,7 +64,15 @@ import { TRANSACTION_AMM_UPDATE_TYPENAME } from "../../constants";
 //   }
 // }
 
-export function processAmmUpdate(id: String, data: String, block: Block): void {
+export function processAmmUpdate(
+  id: String,
+  data: String,
+  block: Block,
+  proxy: Proxy
+): void {
+  proxy.ammUpdateCount = proxy.ammUpdateCount.plus(BIGINT_ONE);
+  block.ammUpdateCount = block.ammUpdateCount.plus(BIGINT_ONE);
+
   let transaction = new AmmUpdate(id);
   transaction.typename = TRANSACTION_AMM_UPDATE_TYPENAME;
   transaction.internalID = compoundIdToSortableDecimal(id);
