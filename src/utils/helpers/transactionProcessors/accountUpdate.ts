@@ -16,9 +16,14 @@ import {
   getToken,
   intToString,
   getOrCreateAccountTokenBalance,
-  compoundIdToSortableDecimal
+  compoundIdToSortableDecimal,
+  getAndUpdateAccountTokenBalanceDailyData,
+  getAndUpdateAccountTokenBalanceWeeklyData
 } from "../index";
-import { TRANSACTION_ACCOUNT_UPDATE_TYPENAME, BIGINT_ONE } from "../../constants";
+import {
+  TRANSACTION_ACCOUNT_UPDATE_TYPENAME,
+  BIGINT_ONE
+} from "../../constants";
 
 // interface AccountUpdate {
 //   owner?: string;
@@ -160,6 +165,23 @@ export function processAccountUpdate(
   transaction.feeToken = feeToken.id;
   transaction.tokenBalances = tokenBalances;
   transaction.accounts = accounts;
+
+  getAndUpdateAccountTokenBalanceDailyData(
+    accountTokenFeeBalance,
+    block.timestamp
+  );
+  getAndUpdateAccountTokenBalanceWeeklyData(
+    accountTokenFeeBalance,
+    block.timestamp
+  );
+  getAndUpdateAccountTokenBalanceDailyData(
+    operatorTokenFeeBalance,
+    block.timestamp
+  );
+  getAndUpdateAccountTokenBalanceWeeklyData(
+    operatorTokenFeeBalance,
+    block.timestamp
+  );
 
   user.save();
   transaction.save();

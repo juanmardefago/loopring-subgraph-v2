@@ -2,11 +2,22 @@ import {
   Pool,
   User,
   AccountTokenBalance,
-  ProtocolAccount
+  ProtocolAccount,
+  AccountTokenBalanceDailyData,
+  AccountTokenBalanceWeeklyData
 } from "../../../generated/schema";
 import { BigInt, Address, Bytes } from "@graphprotocol/graph-ts";
 import { compoundId, intToString, compoundIdToSortableDecimal } from "./util";
-import { ZERO_ADDRESS, BIGINT_ZERO, USER_ACCOUNT_THRESHOLD } from "../constants";
+import {
+  ZERO_ADDRESS,
+  BIGINT_ZERO,
+  USER_ACCOUNT_THRESHOLD,
+  SECONDS_PER_DAY,
+  LAUNCH_DAY,
+  SECONDS_PER_WEEK,
+  LAUNCH_WEEK,
+  WEEK_OFFSET
+} from "../constants";
 
 export function getOrCreateUser(
   id: String,
@@ -70,6 +81,83 @@ export function getOrCreateAccountTokenBalance(
   }
 
   return balance as AccountTokenBalance;
+}
+
+export function getAndUpdateAccountTokenBalanceDailyData(
+  entity: AccountTokenBalance,
+  timestamp: BigInt
+): AccountTokenBalanceDailyData {
+  let dayId = timestamp.toI32() / SECONDS_PER_DAY - LAUNCH_DAY;
+  let id = compoundId(entity.id, BigInt.fromI32(dayId).toString());
+  let dailyData = AccountTokenBalanceDailyData.load(id);
+
+  if (dailyData == null) {
+    dailyData = new AccountTokenBalanceDailyData(id);
+
+    dailyData.dayStart = BigInt.fromI32(
+      (timestamp.toI32() / SECONDS_PER_DAY) * SECONDS_PER_DAY
+    );
+    dailyData.dayEnd = dailyData.dayStart + BigInt.fromI32(SECONDS_PER_DAY);
+    dailyData.dayNumber = dayId;
+    dailyData.account = entity.account;
+    dailyData.token = entity.token;
+    dailyData.accountTokenBalance = entity.id;
+    dailyData.balance = entity.balance;
+    dailyData.balanceOpen = entity.balance;
+    dailyData.balanceClose = entity.balance;
+    dailyData.balanceLow = entity.balance;
+    dailyData.balanceHigh = entity.balance;
+  }
+
+  dailyData.balance = entity.balance;
+  dailyData.balanceClose = entity.balance;
+  if (entity.balance > dailyData.balanceHigh) {
+    dailyData.balanceHigh = entity.balance;
+  } else if (entity.balance < dailyData.balanceLow) {
+    dailyData.balanceLow = entity.balance;
+  }
+  dailyData.save();
+
+  return dailyData as AccountTokenBalanceDailyData;
+}
+
+export function getAndUpdateAccountTokenBalanceWeeklyData(
+  entity: AccountTokenBalance,
+  timestamp: BigInt
+): AccountTokenBalanceWeeklyData {
+  let weekId = timestamp.toI32() / SECONDS_PER_WEEK - LAUNCH_WEEK;
+  let id = compoundId(entity.id, BigInt.fromI32(weekId).toString());
+  let weeklyData = AccountTokenBalanceWeeklyData.load(id);
+
+  if (weeklyData == null) {
+    weeklyData = new AccountTokenBalanceWeeklyData(id);
+
+    weeklyData.weekStart = BigInt.fromI32(
+      (timestamp.toI32() / SECONDS_PER_WEEK) * SECONDS_PER_WEEK - WEEK_OFFSET
+    );
+    weeklyData.weekEnd =
+      weeklyData.weekStart + BigInt.fromI32(SECONDS_PER_WEEK);
+    weeklyData.weekNumber = weekId;
+    weeklyData.account = entity.account;
+    weeklyData.token = entity.token;
+    weeklyData.accountTokenBalance = entity.id;
+    weeklyData.balance = entity.balance;
+    weeklyData.balanceOpen = entity.balance;
+    weeklyData.balanceClose = entity.balance;
+    weeklyData.balanceLow = entity.balance;
+    weeklyData.balanceHigh = entity.balance;
+  }
+
+  weeklyData.balance = entity.balance;
+  weeklyData.balanceClose = entity.balance;
+  if (entity.balance > weeklyData.balanceHigh) {
+    weeklyData.balanceHigh = entity.balance;
+  } else if (entity.balance < weeklyData.balanceLow) {
+    weeklyData.balanceLow = entity.balance;
+  }
+  weeklyData.save();
+
+  return weeklyData as AccountTokenBalanceWeeklyData;
 }
 
 export function getProtocolAccount(transactionId: String): ProtocolAccount {

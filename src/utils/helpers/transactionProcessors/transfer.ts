@@ -20,7 +20,9 @@ import {
   getToken,
   intToString,
   getOrCreateAccountTokenBalance,
-  compoundIdToSortableDecimal
+  compoundIdToSortableDecimal,
+  getAndUpdateAccountTokenBalanceDailyData,
+  getAndUpdateAccountTokenBalanceWeeklyData
 } from "../index";
 import {
   TRANSACTION_TRANSFER_TYPENAME,
@@ -184,6 +186,15 @@ export function processTransfer(
 
     fromAccountTokenBalance.save();
     tokenBalances.push(fromAccountTokenBalance.id);
+
+    getAndUpdateAccountTokenBalanceDailyData(
+      fromAccountTokenBalance,
+      block.timestamp
+    );
+    getAndUpdateAccountTokenBalanceWeeklyData(
+      fromAccountTokenBalance,
+      block.timestamp
+    );
   } else {
     let fromAccountTokenBalance = getOrCreateAccountTokenBalance(
       fromAccountId,
@@ -206,6 +217,23 @@ export function processTransfer(
     fromAccountTokenFeeBalance.save();
     tokenBalances.push(fromAccountTokenBalance.id);
     tokenBalances.push(fromAccountTokenFeeBalance.id);
+
+    getAndUpdateAccountTokenBalanceDailyData(
+      fromAccountTokenBalance,
+      block.timestamp
+    );
+    getAndUpdateAccountTokenBalanceWeeklyData(
+      fromAccountTokenBalance,
+      block.timestamp
+    );
+    getAndUpdateAccountTokenBalanceDailyData(
+      fromAccountTokenFeeBalance,
+      block.timestamp
+    );
+    getAndUpdateAccountTokenBalanceWeeklyData(
+      fromAccountTokenFeeBalance,
+      block.timestamp
+    );
   }
 
   let toAccountTokenBalance = getOrCreateAccountTokenBalance(
@@ -234,6 +262,23 @@ export function processTransfer(
   transaction.accounts = accounts;
 
   operatorTokenFeeBalance.save();
+
+  getAndUpdateAccountTokenBalanceDailyData(
+    operatorTokenFeeBalance,
+    block.timestamp
+  );
+  getAndUpdateAccountTokenBalanceWeeklyData(
+    operatorTokenFeeBalance,
+    block.timestamp
+  );
+  getAndUpdateAccountTokenBalanceDailyData(
+    toAccountTokenBalance,
+    block.timestamp
+  );
+  getAndUpdateAccountTokenBalanceWeeklyData(
+    toAccountTokenBalance,
+    block.timestamp
+  );
 
   // Coerce the type of the Transfer at the end, so we can reuse most of the code with no changes.
   // This could be a lot cleaner if we could use interfaces in AssemblyScript

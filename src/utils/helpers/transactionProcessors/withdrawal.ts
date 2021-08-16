@@ -18,7 +18,9 @@ import {
   getToken,
   intToString,
   getOrCreateAccountTokenBalance,
-  compoundIdToSortableDecimal
+  compoundIdToSortableDecimal,
+  getAndUpdateAccountTokenBalanceDailyData,
+  getAndUpdateAccountTokenBalanceWeeklyData
 } from "../index";
 import { TRANSACTION_WITHDRAWAL_TYPENAME } from "../../constants";
 
@@ -161,6 +163,15 @@ export function processWithdrawal(
 
     accountTokenBalance.save();
     tokenBalances.push(accountTokenBalance.id);
+
+    getAndUpdateAccountTokenBalanceDailyData(
+      accountTokenBalance,
+      block.timestamp
+    );
+    getAndUpdateAccountTokenBalanceWeeklyData(
+      accountTokenBalance,
+      block.timestamp
+    );
   } else {
     let accountTokenBalance = getOrCreateAccountTokenBalance(
       accountId,
@@ -183,6 +194,23 @@ export function processWithdrawal(
 
     tokenBalances.push(accountTokenBalance.id);
     tokenBalances.push(accountTokenFeeBalance.id);
+
+    getAndUpdateAccountTokenBalanceDailyData(
+      accountTokenBalance,
+      block.timestamp
+    );
+    getAndUpdateAccountTokenBalanceWeeklyData(
+      accountTokenBalance,
+      block.timestamp
+    );
+    getAndUpdateAccountTokenBalanceDailyData(
+      accountTokenFeeBalance,
+      block.timestamp
+    );
+    getAndUpdateAccountTokenBalanceWeeklyData(
+      accountTokenFeeBalance,
+      block.timestamp
+    );
   }
 
   let operatorTokenFeeBalance = getOrCreateAccountTokenBalance(
@@ -201,5 +229,15 @@ export function processWithdrawal(
   transaction.accounts = accounts;
 
   operatorTokenFeeBalance.save();
+
+  getAndUpdateAccountTokenBalanceDailyData(
+    operatorTokenFeeBalance,
+    block.timestamp
+  );
+  getAndUpdateAccountTokenBalanceWeeklyData(
+    operatorTokenFeeBalance,
+    block.timestamp
+  );
+
   transaction.save();
 }

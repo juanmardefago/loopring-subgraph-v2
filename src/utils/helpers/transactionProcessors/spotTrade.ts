@@ -28,7 +28,9 @@ import {
   getAndUpdatePairDailyData,
   getAndUpdatePairWeeklyData,
   calculatePrice,
-  compoundIdToSortableDecimal
+  compoundIdToSortableDecimal,
+  getAndUpdateAccountTokenBalanceDailyData,
+  getAndUpdateAccountTokenBalanceWeeklyData
 } from "../index";
 import {
   BIGINT_ZERO,
@@ -603,6 +605,71 @@ export function processSpotTrade(
       token1Amount
     );
   }
+
+  getAndUpdateAccountTokenBalanceDailyData(
+    accountTokenBalanceAA,
+    block.timestamp
+  );
+  getAndUpdateAccountTokenBalanceWeeklyData(
+    accountTokenBalanceAA,
+    block.timestamp
+  );
+  getAndUpdateAccountTokenBalanceDailyData(
+    accountTokenBalanceAB,
+    block.timestamp
+  );
+  getAndUpdateAccountTokenBalanceWeeklyData(
+    accountTokenBalanceAB,
+    block.timestamp
+  );
+  getAndUpdateAccountTokenBalanceDailyData(
+    accountTokenBalanceBB,
+    block.timestamp
+  );
+  getAndUpdateAccountTokenBalanceWeeklyData(
+    accountTokenBalanceBB,
+    block.timestamp
+  );
+  getAndUpdateAccountTokenBalanceDailyData(
+    accountTokenBalanceBA,
+    block.timestamp
+  );
+  getAndUpdateAccountTokenBalanceWeeklyData(
+    accountTokenBalanceBA,
+    block.timestamp
+  );
+  getAndUpdateAccountTokenBalanceDailyData(
+    operatorTokenBalanceA,
+    block.timestamp
+  );
+  getAndUpdateAccountTokenBalanceWeeklyData(
+    operatorTokenBalanceA,
+    block.timestamp
+  );
+  getAndUpdateAccountTokenBalanceDailyData(
+    operatorTokenBalanceB,
+    block.timestamp
+  );
+  getAndUpdateAccountTokenBalanceWeeklyData(
+    operatorTokenBalanceB,
+    block.timestamp
+  );
+  getAndUpdateAccountTokenBalanceDailyData(
+    protocolTokenBalanceA,
+    block.timestamp
+  );
+  getAndUpdateAccountTokenBalanceWeeklyData(
+    protocolTokenBalanceA,
+    block.timestamp
+  );
+  getAndUpdateAccountTokenBalanceDailyData(
+    protocolTokenBalanceB,
+    block.timestamp
+  );
+  getAndUpdateAccountTokenBalanceWeeklyData(
+    protocolTokenBalanceB,
+    block.timestamp
+  );
 
   pairDailyData.save();
   pairWeeklyData.save();

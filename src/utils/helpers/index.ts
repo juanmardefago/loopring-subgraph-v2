@@ -18,7 +18,9 @@ export {
   getOrCreatePool,
   getOrCreateAccountTokenBalance,
   getProtocolAccount,
-  createIfNewAccount
+  createIfNewAccount,
+  getAndUpdateAccountTokenBalanceDailyData,
+  getAndUpdateAccountTokenBalanceWeeklyData
 } from "./account";
 
 export { getProxy, getOrCreateExchange } from "./upgradabilityProxy";

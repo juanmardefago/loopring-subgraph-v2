@@ -13,7 +13,9 @@ import {
   getToken,
   intToString,
   getOrCreateAccountTokenBalance,
-  compoundIdToSortableDecimal
+  compoundIdToSortableDecimal,
+  getAndUpdateAccountTokenBalanceDailyData,
+  getAndUpdateAccountTokenBalanceWeeklyData
 } from "../index";
 import { TRANSACTION_DEPOSIT_TYPENAME, BIGINT_ONE } from "../../constants";
 
@@ -109,6 +111,15 @@ export function processDeposit(
   transaction.token = token.id;
   transaction.tokenBalances = tokenBalances;
   transaction.accounts = accounts;
+
+  getAndUpdateAccountTokenBalanceDailyData(
+    accountTokenBalance,
+    block.timestamp
+  );
+  getAndUpdateAccountTokenBalanceWeeklyData(
+    accountTokenBalance,
+    block.timestamp
+  );
 
   accountTokenBalance.save();
   transaction.save();

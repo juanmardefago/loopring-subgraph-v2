@@ -964,6 +964,8 @@ type SignatureVerification implements Transaction @entity {
 #   accounts: [Account!]
 # }
 
+# Daily data entities
+
 type PairDailyData @entity {
   "The ID follows this pattern: <PAIR ID>-<DAY NUMBER>."
   id: ID!
@@ -1047,6 +1049,46 @@ type TokenDailyData @entity {
   tradedVolumeOrderbook: BigInt!
 }
 
+type AccountTokenBalanceDailyData @entity {
+  "The ID follows this pattern: <ACCOUNT TOKEN BALANCE ID>-<DAY NUMBER>."
+  id: ID!
+
+  "Timestamp of the start of the day. Timezone -> UTC"
+  dayStart: BigInt!
+
+  "Timestamp of the end of the day. Timezone -> UTC"
+  dayEnd: BigInt!
+
+  "Day number is the amount of days since the start block of Loopring 3.6 (block 11149814)"
+  dayNumber: Int!
+
+  "Latest value for balance for this AccountTokenBalance entity on this specific day. Coincides with balanceClose"
+  balance: BigInt!
+
+  "Balance for this AccountTokenBalance entity when it was created."
+  balanceOpen: BigInt!
+
+  "Last update of balance for this AccountTokenBalance entity on this specific day"
+  balanceClose: BigInt!
+
+  "Lowest balance for this AccountTokenBalance entity on this specific day"
+  balanceLow: BigInt!
+
+  "Highest balance for this AccountTokenBalance entity on this specific day"
+  balanceHigh: BigInt!
+
+  "Link to the Account entity. Can be a Pool or User entity"
+  account: Account!
+
+  "Link to the Token entity. Holds all details of the token itself."
+  token: Token!
+
+  "Link to the original AccountTokenBalance entity."
+  accountTokenBalance: AccountTokenBalance!
+}
+
+# Weekly data entities
+
 type PairWeeklyData @entity {
   "The ID follows this pattern: <PAIR ID>-<WEEK NUMBER>."
   id: ID!
@@ -1128,4 +1170,42 @@ type TokenWeeklyData @entity {
 
   "Volume traded for the token exclusively on Orderbook trades"
   tradedVolumeOrderbook: BigInt!
+}
+
+type AccountTokenBalanceWeeklyData @entity {
+  "The ID follows this pattern: <ACCOUNT TOKEN BALANCE ID>-<WEEK NUMBER>."
+  id: ID!
+
+  "Timestamp of the start of the week. Timezone -> UTC"
+  weekStart: BigInt!
+
+  "Timestamp of the end of the week. Timezone -> UTC"
+  weekEnd: BigInt!
+
+  "Week number is the amount of weeks since the start block of Loopring 3.6 (block 11149814)"
+  weekNumber: Int!
+
+  "Latest value for balance for this AccountTokenBalance entity on this specific week. Coincides with balanceClose"
+  balance: BigInt!
+
+  "Balance for this AccountTokenBalance entity when it was created."
+  balanceOpen: BigInt!
+
+  "Last update of balance for this AccountTokenBalance entity on this specific week"
+  balanceClose: BigInt!
+
+  "Lowest balance for this AccountTokenBalance entity on this specific week"
+  balanceLow: BigInt!
+
+  "Highest balance for this AccountTokenBalance entity on this specific week"
+  balanceHigh: BigInt!
+
+  "Link to the Account entity. Can be a Pool or User entity"
+  account: Account!
+
+  "Link to the Token entity. Holds all details of the token itself."
+  token: Token!
+
+  "Link to the original AccountTokenBalance entity."
+  accountTokenBalance: AccountTokenBalance!
 }
