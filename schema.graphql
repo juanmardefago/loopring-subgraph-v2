@@ -360,6 +360,10 @@ type AccountTokenBalance @entity {
   token: Token!
 
   transactions: [Transaction!]! @derivedFrom(field: "tokenBalances")
+
+  dailyData: [AccountTokenBalanceDailyData!]! @derivedFrom(field: "accountTokenBalance")
+
+  weeklyData: [AccountTokenBalanceWeeklyData!]! @derivedFrom(field: "accountTokenBalance")
 }
 
 enum TransactionType {
