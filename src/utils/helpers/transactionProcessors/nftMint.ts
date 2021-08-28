@@ -1,10 +1,11 @@
-// import {
-//   MintNFT,
-//   Block,
-//   Token,
-//   User,
-//   Pool, Proxy
-// } from "../../../../generated/schema";
+import {
+  MintNFT,
+  Block,
+  Token,
+  User,
+  Pool,
+  Proxy
+} from "../../../../generated/schema";
 import { BigInt, Address, Bytes } from "@graphprotocol/graph-ts";
 import { extractData, extractBigInt, extractInt } from "../data";
 import {
@@ -170,6 +171,8 @@ export function processNFTMint(
 ): void {
   proxy.nftMintCount = proxy.nftMintCount.plus(BIGINT_ONE);
   block.nftMintCount = block.nftMintCount.plus(BIGINT_ONE);
+  proxy.transactionCount = proxy.transactionCount + BIGINT_ONE;
+  block.transactionCount = block.transactionCount + BIGINT_ONE;
 
   let transaction = new MintNFT(id);
   transaction.typename = TRANSACTION_NFT_MINT_TYPENAME;

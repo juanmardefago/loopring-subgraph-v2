@@ -124,6 +124,9 @@ export function processTransfer(
   block: Block,
   proxy: Proxy
 ): void {
+  proxy.transactionCount = proxy.transactionCount + BIGINT_ONE;
+  block.transactionCount = block.transactionCount + BIGINT_ONE;
+
   let transaction = new Transfer(id);
   let offset = 1;
 

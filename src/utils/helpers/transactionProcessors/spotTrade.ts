@@ -243,6 +243,9 @@ export function processSpotTrade(
   block: Block,
   proxy: Proxy
 ): void {
+  proxy.transactionCount = proxy.transactionCount + BIGINT_ONE;
+  block.transactionCount = block.transactionCount + BIGINT_ONE;
+
   let transaction = new OrderbookTrade(id);
   transaction.internalID = compoundIdToSortableDecimal(id);
   transaction.data = data;

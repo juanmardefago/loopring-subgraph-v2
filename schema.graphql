@@ -47,11 +47,11 @@ type Proxy @entity {
   "Total amount of SignatureVerification transactions processed across all blocks"
   signatureVerificationCount: BigInt!
 
-  # "Total amount of NFT Mint transactions processed across all blocks"
-  # nftMintCount: BigInt!
+  "Total amount of NFT Mint transactions processed across all blocks"
+  nftMintCount: BigInt!
 
-  # "Total amount of NFT Data transactions processed across all blocks"
-  # nftDataCount: BigInt!
+  "Total amount of NFT Data transactions processed across all blocks"
+  nftDataCount: BigInt!
 }
 
 type Exchange @entity {
@@ -225,11 +225,11 @@ type Block @entity {
   "Total amount of SignatureVerification transactions processed across all blocks"
   signatureVerificationCount: BigInt!
 
-  # "Total amount of NFT Mint transactions processed across all blocks"
-  # nftMintCount: BigInt!
+  "Total amount of NFT Mint transactions processed across all blocks"
+  nftMintCount: BigInt!
 
-  # "Total amount of NFT Data transactions processed across all blocks"
-  # nftDataCount: BigInt!
+  "Total amount of NFT Data transactions processed across all blocks"
+  nftDataCount: BigInt!
 }
 
 interface Account {
@@ -375,8 +375,8 @@ enum TransactionType {
   AccountUpdate
   AmmUpdate
   SignatureVerification
-  # MintNFT
-  # DataNFT
+  MintNFT
+  DataNFT
   Add
   Remove
 }
@@ -931,42 +931,42 @@ type SignatureVerification implements Transaction @entity {
 
   accounts: [Account!]
 }
-# Leaving it commented out to avoid leaking it on the schema until it's implemented
-# type MintNFT implements Transaction @entity {
-#   id: ID!
-#
-#   "Explicit copy of __typename to make it usable when filtering"
-#   typename: TransactionType!
-#
-#   "ID represented as a BigDecimal for sorting purposes"
-#   internalID: BigDecimal!
-#
-#   data: String!
-#
-#   block: Block!
-#
-#   tokenBalances: [AccountTokenBalance!]
-#
-#   accounts: [Account!]
-# }
-#
-# type DataNFT implements Transaction @entity {
-#   id: ID!
-#
-#   "Explicit copy of __typename to make it usable when filtering"
-#   typename: TransactionType!
-#
-#   "ID represented as a BigDecimal for sorting purposes"
-#   internalID: BigDecimal!
-#
-#   data: String!
-#
-#   block: Block!
-#
-#   tokenBalances: [AccountTokenBalance!]
-#
-#   accounts: [Account!]
-# }
+
+type MintNFT implements Transaction @entity {
+  id: ID!
+
+  "Explicit copy of __typename to make it usable when filtering"
+  typename: TransactionType!
+
+  "ID represented as a BigDecimal for sorting purposes"
+  internalID: BigDecimal!
+
+  data: String!
+
+  block: Block!
+
+  tokenBalances: [AccountTokenBalance!]
+
+  accounts: [Account!]
+}
+
+type DataNFT implements Transaction @entity {
+  id: ID!
+
+  "Explicit copy of __typename to make it usable when filtering"
+  typename: TransactionType!
+
+  "ID represented as a BigDecimal for sorting purposes"
+  internalID: BigDecimal!
+
+  data: String!
+
+  block: Block!
+
+  tokenBalances: [AccountTokenBalance!]
+
+  accounts: [Account!]
+}
 
 # Daily data entities
 

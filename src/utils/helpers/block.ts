@@ -1,16 +1,37 @@
-import { Block, Proxy } from "../../../generated/schema";
+import { Token, Exchange, Block, Proxy } from "../../../generated/schema";
 import { Address, BigInt, log } from "@graphprotocol/graph-ts";
+import { ERC20 } from "../../../generated/OwnedUpgradabilityProxy/ERC20";
 import { DEFAULT_DECIMALS } from "../../utils/decimals";
 import {
   BIGINT_ZERO,
   BIGINT_ONE,
   BIGDECIMAL_ZERO,
-  ZERO_ADDRESS
+  ZERO_ADDRESS,
+  TRANSACTION_NOOP,
+  TRANSACTION_DEPOSIT,
+  TRANSACTION_SPOT_TRADE,
+  TRANSACTION_TRANSFER,
+  TRANSACTION_WITHDRAWAL,
+  TRANSACTION_ACCOUNT_UPDATE,
+  TRANSACTION_AMM_UPDATE,
+  TRANSACTION_SIGNATURE_VERIFICATION,
+  TRANSACTION_NFT_MINT,
+  TRANSACTION_NFT_DATA
 } from "../../utils/constants";
-import { extractData, extractInt } from "./data";
+import { extractData, extractInt, getTxData } from "./data";
 import { intToString, compoundId } from "./index";
-import { processTransactionData } from "./transaction";
 import { getProxy } from './upgradabilityProxy'
+import {
+  processDeposit,
+  processSpotTrade,
+  processTransfer,
+  processWithdrawal,
+  processAccountUpdate,
+  processAmmUpdate,
+  processSignatureVerification,
+  processNFTMint,
+  processNFTData
+} from './transactionProcessors'
 
 export function getOrCreateBlock(internalID: BigInt): Block {
   let id = internalID.toString()
@@ -30,8 +51,8 @@ export function getOrCreateBlock(internalID: BigInt): Block {
     block.accountUpdateCount = BIGINT_ZERO
     block.ammUpdateCount = BIGINT_ZERO
     block.signatureVerificationCount = BIGINT_ZERO
-    // block.nftMintCount = BIGINT_ZERO
-    // block.nftDataCount = BIGINT_ZERO
+    block.nftMintCount = BIGINT_ZERO
+    block.nftDataCount = BIGINT_ZERO
   }
 
   return block as Block;
@@ -54,21 +75,44 @@ export function processBlockData(block: Block, proxy: Proxy): Block {
   block.operatorAccount = intToString(block.operatorAccountID)
 
   for (let i = 0; i < block.blockSize; i++) {
-    let size1 = 29;
-    let size2 = 39;
-    let txData1 = extractData(data, offset + i * size1, size1);
-    let txData2 = extractData(
-      data,
-      offset + block.blockSize * size1 + i * size2,
-      size2
-    );
-    let txData = txData1.concat(txData2);
+    let txData = getTxData(data, offset, i, block.blockSize);
 
     let txId = compoundId(block.id, intToString(i));
-    let txValid = processTransactionData(txId, txData, block, proxy);
-    if (txValid) {
-      proxy.transactionCount = proxy.transactionCount + BIGINT_ONE
-      block.transactionCount = block.transactionCount + BIGINT_ONE
+
+    let txType = txData.slice(0, 2);
+
+    if(txType == TRANSACTION_NOOP) {
+      // Do nothing
+    } else if(txType == TRANSACTION_DEPOSIT) {
+      processDeposit(txId, txData, block, proxy)
+    } else if(txType == TRANSACTION_WITHDRAWAL) {
+      processWithdrawal(txId, txData, block, proxy)
+    } else if(txType == TRANSACTION_TRANSFER) {
+      processTransfer(txId, txData, block, proxy)
+    } else if(txType == TRANSACTION_SPOT_TRADE) {
+      processSpotTrade(txId, txData, block, proxy)
+    } else if(txType == TRANSACTION_ACCOUNT_UPDATE) {
+      processAccountUpdate(txId, txData, block, proxy)
+    } else if(txType == TRANSACTION_AMM_UPDATE) {
+      processAmmUpdate(txId, txData, block, proxy)
+    } else if(txType == TRANSACTION_SIGNATURE_VERIFICATION) {
+      processSignatureVerification(txId, txData, block, proxy)
+    } else if(txType == TRANSACTION_NFT_MINT) {
+      if (i + 1 < block.blockSize) {
+          txData.concat(
+            getTxData(data, offset, i + 1, block.blockSize)
+          );
+          if (i + 2 < block.blockSize) {
+            txData.concat(
+              getTxData(data, offset, i + 2, block.blockSize)
+            );
+          }
+        }
+      processNFTMint(txId, txData, block, proxy)
+    } else if(txType == TRANSACTION_NFT_DATA) {
+      processNFTData(txId, txData, block, proxy)
+    } else {
+      log.warning("Unknown transaction type encountered, raw tx data: {}", [txData])
     }
   }
 

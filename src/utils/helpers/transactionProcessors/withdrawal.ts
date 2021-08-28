@@ -22,7 +22,7 @@ import {
   getAndUpdateAccountTokenBalanceDailyData,
   getAndUpdateAccountTokenBalanceWeeklyData
 } from "../index";
-import { TRANSACTION_WITHDRAWAL_TYPENAME } from "../../constants";
+import { TRANSACTION_WITHDRAWAL_TYPENAME, BIGINT_ONE } from "../../constants";
 
 // interface Withdrawal {
 //   type?: number;
@@ -108,6 +108,11 @@ export function processWithdrawal(
   block: Block,
   proxy: Proxy
 ): void {
+  proxy.withdrawalCount = proxy.withdrawalCount + BIGINT_ONE;
+  block.withdrawalCount = block.withdrawalCount + BIGINT_ONE;
+  proxy.transactionCount = proxy.transactionCount + BIGINT_ONE;
+  block.transactionCount = block.transactionCount + BIGINT_ONE;
+
   let transaction = new Withdrawal(id);
   transaction.typename = TRANSACTION_WITHDRAWAL_TYPENAME;
   transaction.internalID = compoundIdToSortableDecimal(id);

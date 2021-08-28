@@ -20,8 +20,8 @@ export function getProxy(): Proxy {
     proxy.accountUpdateCount = BIGINT_ZERO
     proxy.ammUpdateCount = BIGINT_ZERO
     proxy.signatureVerificationCount = BIGINT_ZERO
-    // proxy.nftMintCount = BIGINT_ZERO
-    // proxy.nftDataCount = BIGINT_ZERO
+    proxy.nftMintCount = BIGINT_ZERO
+    proxy.nftDataCount = BIGINT_ZERO
 
     proxy.save();
   }

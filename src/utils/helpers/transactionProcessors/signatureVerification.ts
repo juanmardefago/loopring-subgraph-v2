@@ -57,6 +57,8 @@ export function processSignatureVerification(
 ): void {
   proxy.signatureVerificationCount = proxy.signatureVerificationCount.plus(BIGINT_ONE);
   block.signatureVerificationCount = block.signatureVerificationCount.plus(BIGINT_ONE);
+  proxy.transactionCount = proxy.transactionCount + BIGINT_ONE
+  block.transactionCount = block.transactionCount + BIGINT_ONE
 
   let transaction = new SignatureVerification(id);
   transaction.typename = TRANSACTION_SIGNATURE_VERIFICATION_TYPENAME;

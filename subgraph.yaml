@@ -28,8 +28,8 @@ dataSources:
         - Transfer
         - SpotTrade
         - AmmUpdate
-        - AccountUpdate
         - SignatureVerification
+        - AccountUpdate
       abis:
         - name: OwnedUpgradabilityProxy
           file: ./abis/OwnedUpgradabilityProxy.json

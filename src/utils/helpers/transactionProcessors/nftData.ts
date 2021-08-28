@@ -1,10 +1,11 @@
-// import {
-//   DataNFT,
-//   Block,
-//   Token,
-//   User,
-//   Pool, Proxy
-// } from "../../../../generated/schema";
+import {
+  DataNFT,
+  Block,
+  Token,
+  User,
+  Pool,
+  Proxy
+} from "../../../../generated/schema";
 import { BigInt, Address, Bytes } from "@graphprotocol/graph-ts";
 import { extractData, extractBigInt, extractInt } from "../data";
 import {
@@ -76,6 +77,8 @@ export function processNFTData(
 ): void {
   proxy.nftDataCount = proxy.nftDataCount.plus(BIGINT_ONE);
   block.nftDataCount = block.nftDataCount.plus(BIGINT_ONE);
+  proxy.transactionCount = proxy.transactionCount + BIGINT_ONE
+  block.transactionCount = block.transactionCount + BIGINT_ONE
 
   let transaction = new DataNFT(id);
   transaction.typename = TRANSACTION_NFT_DATA_TYPENAME;

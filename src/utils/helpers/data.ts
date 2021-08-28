@@ -52,6 +52,19 @@ export function extractBigIntFromFloat(
   return value;
 }
 
+export function getTxData(data: String, offset: i32, index: i32, blockSize: i32): String {
+  let size1 = 29;
+  let size2 = 39;
+  let txData1 = extractData(data, offset + index * size1, size1);
+  let txData2 = extractData(
+    data,
+    offset + blockSize * size1 + index * size2,
+    size2
+  );
+  let txData = txData1.concat(txData2);
+  return txData;
+}
+
 // Float24Encoding = FloatEncoding(5, 19, 10)
 // Float16Encoding = FloatEncoding(5, 11, 10)
 // Float12Encoding = FloatEncoding(5,  7, 10)

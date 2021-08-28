@@ -1,7 +1,5 @@
 export { getOrCreateBlock, processBlockData } from "./block";
 
-export { processTransactionData } from "./transaction";
-
 export {
   getOrCreateToken,
   getToken,
