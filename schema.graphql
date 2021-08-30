@@ -26,6 +26,9 @@ type Proxy @entity {
   "Total amount of Transfer transactions processed across all blocks"
   transferCount: BigInt!
 
+  "Total amount of TransferNFT transactions processed across all blocks"
+  transferNFTCount: BigInt!
+
   "Total amount of Add transactions processed across all blocks"
   addCount: BigInt!
 
@@ -206,6 +209,9 @@ type Block @entity {
 
   "Total amount of Transfer transactions processed across all blocks"
   transferCount: BigInt!
+
+  "Total amount of Transfer transactions processed across all blocks"
+  transferNFTCount: BigInt!
 
   "Total amount of Add transactions processed across all blocks"
   addCount: BigInt!

@@ -272,6 +272,9 @@ export function processTransfer(
     coercedTransaction.toAccount = toAccountId;
     coercedTransaction.typename = TRANSACTION_TRANSFER_NFT_TYPENAME;
     coercedTransaction.save();
+
+    proxy.transferNFTCount = proxy.transferNFTCount.plus(BIGINT_ONE);
+    block.transferNFTCount = block.transferNFTCount.plus(BIGINT_ONE);
   } else {
     // ERC20 Transfer
     let token = getToken(intToString(transaction.tokenID)) as Token;

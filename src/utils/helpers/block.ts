@@ -44,6 +44,7 @@ export function getOrCreateBlock(internalID: BigInt): Block {
     block.depositCount = BIGINT_ZERO
     block.withdrawalCount = BIGINT_ZERO
     block.transferCount = BIGINT_ZERO
+    block.transferNFTCount = BIGINT_ZERO
     block.addCount = BIGINT_ZERO
     block.removeCount = BIGINT_ZERO
     block.orderbookTradeCount = BIGINT_ZERO
