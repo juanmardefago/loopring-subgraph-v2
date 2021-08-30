@@ -6,7 +6,8 @@ import {
   Token,
   User,
   Pool,
-  Proxy
+  Proxy,
+  TransferNFT
 } from "../../../../generated/schema";
 import { BigInt, Address, Bytes } from "@graphprotocol/graph-ts";
 import {
@@ -22,14 +23,19 @@ import {
   getOrCreateAccountTokenBalance,
   compoundIdToSortableDecimal,
   getAndUpdateAccountTokenBalanceDailyData,
-  getAndUpdateAccountTokenBalanceWeeklyData
+  getAndUpdateAccountTokenBalanceWeeklyData,
+  getOrCreateAccountNFTSlot,
+  getOrCreateNFT
 } from "../index";
 import {
   TRANSACTION_TRANSFER_TYPENAME,
   TRANSACTION_ADD_TYPENAME,
   TRANSACTION_REMOVE_TYPENAME,
+  TRANSACTION_TRANSFER_NFT_TYPENAME,
   USER_ACCOUNT_THRESHOLD,
-  BIGINT_ONE
+  BIGINT_ONE,
+  BIGINT_ZERO,
+  isNFT
 } from "../../constants";
 
 // interface Transfer {
@@ -166,9 +172,23 @@ export function processTransfer(
   offset += 20;
   transaction.from = extractData(data, offset, 20);
   offset += 20;
+  transaction.toTokenID = extractInt(data, offset, 2);
+  offset += 2;
+
+  // toTokenID is needed to enable NFT trading, since in case of NFT trading,
+  // it will depict the slot on where the NFT is gonna be placed
+  transaction.toTokenID =
+    transaction.toTokenID != 0 ? transaction.toTokenID : transaction.tokenID;
 
   let fromAccountId = intToString(transaction.accountFromID);
   let toAccountId = intToString(transaction.accountToID);
+
+  createIfNewAccount(
+    transaction.accountFromID,
+    transaction.id,
+    transaction.from
+  );
+  createIfNewAccount(transaction.accountToID, transaction.id, transaction.to);
 
   transaction.internalID = compoundIdToSortableDecimal(id);
   transaction.data = data;
@@ -178,155 +198,222 @@ export function processTransfer(
   accounts.push(fromAccountId);
   accounts.push(toAccountId);
 
-  let token = getToken(intToString(transaction.tokenID)) as Token;
   let feeToken = getToken(intToString(transaction.feeTokenID)) as Token;
-
-  createIfNewAccount(
-    transaction.accountFromID,
-    transaction.id,
-    transaction.from
-  );
-  createIfNewAccount(transaction.accountToID, transaction.id, transaction.to);
 
   let tokenBalances = new Array<String>();
 
-  // Token transfer balance calculations
-  // Avoid overwriting balance entities
-  if (token.id == feeToken.id) {
-    let fromAccountTokenBalance = getOrCreateAccountTokenBalance(
-      fromAccountId,
-      token.id
-    );
-    fromAccountTokenBalance.balance = fromAccountTokenBalance.balance.minus(
-      transaction.amount.minus(transaction.fee)
-    );
-
-    fromAccountTokenBalance.save();
-    tokenBalances.push(fromAccountTokenBalance.id);
-
-    getAndUpdateAccountTokenBalanceDailyData(
-      fromAccountTokenBalance,
-      block.timestamp
-    );
-    getAndUpdateAccountTokenBalanceWeeklyData(
-      fromAccountTokenBalance,
-      block.timestamp
-    );
-  } else {
-    let fromAccountTokenBalance = getOrCreateAccountTokenBalance(
-      fromAccountId,
-      token.id
-    );
-    fromAccountTokenBalance.balance = fromAccountTokenBalance.balance.minus(
-      transaction.amount
-    );
-    fromAccountTokenBalance.save();
-
+  if (isNFT(transaction.tokenID)) {
+    let coercedTransaction = transaction as TransferNFT;
+    // NFT Transfer
     // Fee token balance calculation
     let fromAccountTokenFeeBalance = getOrCreateAccountTokenBalance(
       fromAccountId,
       feeToken.id
     );
     fromAccountTokenFeeBalance.balance = fromAccountTokenFeeBalance.balance.minus(
-      transaction.fee
+      coercedTransaction.fee
     );
 
     fromAccountTokenFeeBalance.save();
-    tokenBalances.push(fromAccountTokenBalance.id);
     tokenBalances.push(fromAccountTokenFeeBalance.id);
 
     getAndUpdateAccountTokenBalanceDailyData(
-      fromAccountTokenBalance,
+      fromAccountTokenFeeBalance,
       block.timestamp
     );
     getAndUpdateAccountTokenBalanceWeeklyData(
-      fromAccountTokenBalance,
+      fromAccountTokenFeeBalance,
+      block.timestamp
+    );
+
+    // Operator update
+    let operatorTokenFeeBalance = getOrCreateAccountTokenBalance(
+      intToString(block.operatorAccountID),
+      feeToken.id
+    );
+    operatorTokenFeeBalance.balance = operatorTokenFeeBalance.balance.plus(
+      coercedTransaction.fee
+    );
+    tokenBalances.push(operatorTokenFeeBalance.id);
+
+    operatorTokenFeeBalance.save();
+
+    // NFT transfer logic
+    let fromSlot = getOrCreateAccountNFTSlot(
+      coercedTransaction.accountFromID,
+      coercedTransaction.tokenID,
+      coercedTransaction.id
+    );
+    let toSlot = getOrCreateAccountNFTSlot(
+      coercedTransaction.accountToID,
+      coercedTransaction.toTokenID,
+      coercedTransaction.id
+    );
+
+    fromSlot.balance = fromSlot.balance.minus(coercedTransaction.amount);
+    toSlot.balance = toSlot.balance.plus(coercedTransaction.amount);
+
+    toSlot.nft = fromSlot.nft;
+    if (fromSlot.balance <= BIGINT_ZERO) {
+      fromSlot.nft = null;
+    }
+
+    toSlot.save();
+    fromSlot.save();
+
+    coercedTransaction.fromSlot = fromSlot.id;
+    coercedTransaction.toSlot = toSlot.id;
+
+    coercedTransaction.feeToken = feeToken.id;
+    coercedTransaction.tokenBalances = tokenBalances;
+    coercedTransaction.accounts = accounts;
+
+    coercedTransaction.fromAccount = fromAccountId;
+    coercedTransaction.toAccount = toAccountId;
+    coercedTransaction.typename = TRANSACTION_TRANSFER_NFT_TYPENAME;
+    coercedTransaction.save();
+  } else {
+    // ERC20 Transfer
+    let token = getToken(intToString(transaction.tokenID)) as Token;
+
+    // Token transfer balance calculations
+    // Avoid overwriting balance entities
+    if (token.id == feeToken.id) {
+      let fromAccountTokenBalance = getOrCreateAccountTokenBalance(
+        fromAccountId,
+        token.id
+      );
+      fromAccountTokenBalance.balance = fromAccountTokenBalance.balance.minus(
+        transaction.amount.minus(transaction.fee)
+      );
+
+      fromAccountTokenBalance.save();
+      tokenBalances.push(fromAccountTokenBalance.id);
+
+      getAndUpdateAccountTokenBalanceDailyData(
+        fromAccountTokenBalance,
+        block.timestamp
+      );
+      getAndUpdateAccountTokenBalanceWeeklyData(
+        fromAccountTokenBalance,
+        block.timestamp
+      );
+    } else {
+      let fromAccountTokenBalance = getOrCreateAccountTokenBalance(
+        fromAccountId,
+        token.id
+      );
+      fromAccountTokenBalance.balance = fromAccountTokenBalance.balance.minus(
+        transaction.amount
+      );
+      fromAccountTokenBalance.save();
+
+      // Fee token balance calculation
+      let fromAccountTokenFeeBalance = getOrCreateAccountTokenBalance(
+        fromAccountId,
+        feeToken.id
+      );
+      fromAccountTokenFeeBalance.balance = fromAccountTokenFeeBalance.balance.minus(
+        transaction.fee
+      );
+
+      fromAccountTokenFeeBalance.save();
+      tokenBalances.push(fromAccountTokenBalance.id);
+      tokenBalances.push(fromAccountTokenFeeBalance.id);
+
+      getAndUpdateAccountTokenBalanceDailyData(
+        fromAccountTokenBalance,
+        block.timestamp
+      );
+      getAndUpdateAccountTokenBalanceWeeklyData(
+        fromAccountTokenBalance,
+        block.timestamp
+      );
+      getAndUpdateAccountTokenBalanceDailyData(
+        fromAccountTokenFeeBalance,
+        block.timestamp
+      );
+      getAndUpdateAccountTokenBalanceWeeklyData(
+        fromAccountTokenFeeBalance,
+        block.timestamp
+      );
+    }
+
+    let toAccountTokenBalance = getOrCreateAccountTokenBalance(
+      toAccountId,
+      token.id
+    );
+    toAccountTokenBalance.balance = toAccountTokenBalance.balance.plus(
+      transaction.amount
+    );
+    toAccountTokenBalance.save();
+    tokenBalances.push(toAccountTokenBalance.id);
+
+    // Operator update
+    let operatorTokenFeeBalance = getOrCreateAccountTokenBalance(
+      intToString(block.operatorAccountID),
+      feeToken.id
+    );
+    operatorTokenFeeBalance.balance = operatorTokenFeeBalance.balance.plus(
+      transaction.fee
+    );
+    tokenBalances.push(operatorTokenFeeBalance.id);
+
+    transaction.token = token.id;
+    transaction.feeToken = feeToken.id;
+    transaction.tokenBalances = tokenBalances;
+    transaction.accounts = accounts;
+
+    operatorTokenFeeBalance.save();
+
+    getAndUpdateAccountTokenBalanceDailyData(
+      operatorTokenFeeBalance,
+      block.timestamp
+    );
+    getAndUpdateAccountTokenBalanceWeeklyData(
+      operatorTokenFeeBalance,
       block.timestamp
     );
     getAndUpdateAccountTokenBalanceDailyData(
-      fromAccountTokenFeeBalance,
+      toAccountTokenBalance,
       block.timestamp
     );
     getAndUpdateAccountTokenBalanceWeeklyData(
-      fromAccountTokenFeeBalance,
+      toAccountTokenBalance,
       block.timestamp
     );
-  }
 
-  let toAccountTokenBalance = getOrCreateAccountTokenBalance(
-    toAccountId,
-    token.id
-  );
-  toAccountTokenBalance.balance = toAccountTokenBalance.balance.plus(
-    transaction.amount
-  );
-  toAccountTokenBalance.save();
-  tokenBalances.push(toAccountTokenBalance.id);
+    // Coerce the type of the Transfer at the end, so we can reuse most of the code with no changes.
+    // This could be a lot cleaner if we could use interfaces in AssemblyScript
+    if (
+      transaction.accountToID > USER_ACCOUNT_THRESHOLD &&
+      transaction.accountFromID > USER_ACCOUNT_THRESHOLD
+    ) {
+      proxy.transferCount = proxy.transferCount.plus(BIGINT_ONE);
+      block.transferCount = block.transferCount.plus(BIGINT_ONE);
 
-  // Operator update
-  let operatorTokenFeeBalance = getOrCreateAccountTokenBalance(
-    intToString(block.operatorAccountID),
-    feeToken.id
-  );
-  operatorTokenFeeBalance.balance = operatorTokenFeeBalance.balance.plus(
-    transaction.fee
-  );
-  tokenBalances.push(operatorTokenFeeBalance.id);
+      transaction.fromAccount = fromAccountId;
+      transaction.toAccount = toAccountId;
+      transaction.typename = TRANSACTION_TRANSFER_TYPENAME;
+      transaction.save();
+    } else if (transaction.accountToID < USER_ACCOUNT_THRESHOLD) {
+      proxy.addCount = proxy.addCount.plus(BIGINT_ONE);
+      block.addCount = block.addCount.plus(BIGINT_ONE);
 
-  transaction.token = token.id;
-  transaction.feeToken = feeToken.id;
-  transaction.tokenBalances = tokenBalances;
-  transaction.accounts = accounts;
+      let coercedTransaction = transaction as Add;
+      coercedTransaction.account = fromAccountId;
+      coercedTransaction.pool = toAccountId;
+      coercedTransaction.typename = TRANSACTION_ADD_TYPENAME;
+      coercedTransaction.save();
+    } else if (transaction.accountFromID < USER_ACCOUNT_THRESHOLD) {
+      proxy.removeCount = proxy.removeCount.plus(BIGINT_ONE);
+      block.removeCount = block.removeCount.plus(BIGINT_ONE);
 
-  operatorTokenFeeBalance.save();
-
-  getAndUpdateAccountTokenBalanceDailyData(
-    operatorTokenFeeBalance,
-    block.timestamp
-  );
-  getAndUpdateAccountTokenBalanceWeeklyData(
-    operatorTokenFeeBalance,
-    block.timestamp
-  );
-  getAndUpdateAccountTokenBalanceDailyData(
-    toAccountTokenBalance,
-    block.timestamp
-  );
-  getAndUpdateAccountTokenBalanceWeeklyData(
-    toAccountTokenBalance,
-    block.timestamp
-  );
-
-  // Coerce the type of the Transfer at the end, so we can reuse most of the code with no changes.
-  // This could be a lot cleaner if we could use interfaces in AssemblyScript
-  if (
-    transaction.accountToID > USER_ACCOUNT_THRESHOLD &&
-    transaction.accountFromID > USER_ACCOUNT_THRESHOLD
-  ) {
-    proxy.transferCount = proxy.transferCount.plus(BIGINT_ONE);
-    block.transferCount = block.transferCount.plus(BIGINT_ONE);
-
-    transaction.fromAccount = fromAccountId;
-    transaction.toAccount = toAccountId;
-    transaction.typename = TRANSACTION_TRANSFER_TYPENAME;
-    transaction.save();
-  } else if (transaction.accountToID < USER_ACCOUNT_THRESHOLD) {
-    proxy.addCount = proxy.addCount.plus(BIGINT_ONE);
-    block.addCount = block.addCount.plus(BIGINT_ONE);
-
-    let coercedTransaction = transaction as Add;
-    coercedTransaction.account = fromAccountId;
-    coercedTransaction.pool = toAccountId;
-    coercedTransaction.typename = TRANSACTION_ADD_TYPENAME;
-    coercedTransaction.save();
-  } else if (transaction.accountFromID < USER_ACCOUNT_THRESHOLD) {
-    proxy.removeCount = proxy.removeCount.plus(BIGINT_ONE);
-    block.removeCount = block.removeCount.plus(BIGINT_ONE);
-
-    let coercedTransaction = transaction as Remove;
-    coercedTransaction.account = toAccountId;
-    coercedTransaction.pool = fromAccountId;
-    coercedTransaction.typename = TRANSACTION_REMOVE_TYPENAME;
-    coercedTransaction.save();
+      let coercedTransaction = transaction as Remove;
+      coercedTransaction.account = toAccountId;
+      coercedTransaction.pool = fromAccountId;
+      coercedTransaction.typename = TRANSACTION_REMOVE_TYPENAME;
+      coercedTransaction.save();
+    }
   }
 }

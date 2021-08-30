@@ -594,6 +594,65 @@ type Transfer implements Transaction @entity {
   from: String!
   "[RAW L2 DATA] Address string of the account that received the tokens"
   to: String!
+  "[RAW L2 DATA] Token ID of the token transfered. Mainly used for NFT transfers"
+  toTokenID: Int!
+
+  tokenBalances: [AccountTokenBalance!]
+
+  accounts: [Account!]
+}
+
+type TransferNFT implements Transaction @entity {
+  id: ID!
+
+  "Explicit copy of __typename to make it usable when filtering"
+  typename: TransactionType!
+
+  "ID represented as a BigDecimal for sorting purposes"
+  internalID: BigDecimal!
+
+  data: String!
+
+  block: Block!
+
+  "Account entity that sent the tokens"
+  fromAccount: Account!
+
+  "Account entity that received the tokens"
+  toAccount: Account!
+
+  "Slot entity from where the NFT is moved"
+  fromSlot: AccountNFTSlot!
+
+  "Slot entity to where the NFT is moved"
+  toSlot: AccountNFTSlot!
+
+  "Token entity with information about the token used to pay the operator fees"
+  feeToken: Token!
+
+  # Raw data parsed from the L2 data
+  "[RAW L2 DATA] Transfer type"
+  type: Int!
+  "[RAW L2 DATA] Account ID for the account that sent the tokens"
+  accountFromID: Int!
+  "[RAW L2 DATA] Account ID for the account that received the tokens"
+  accountToID: Int!
+  "[RAW L2 DATA] Token ID of the token transfered"
+  tokenID: Int!
+  "[RAW L2 DATA] Amount transfered"
+  amount: BigInt!
+  "[RAW L2 DATA] Token ID of token used to pay the operator fees"
+  feeTokenID: Int!
+  "[RAW L2 DATA] Fee amount paid"
+  fee: BigInt!
+  "[RAW L2 DATA] StorageID"
+  storageID: Int!
+  "[RAW L2 DATA] Address string of the account that sent the tokens"
+  from: String!
+  "[RAW L2 DATA] Address string of the account that received the tokens"
+  to: String!
+  "[RAW L2 DATA] Token ID of the token transfered. Mainly used for NFT transfers"
+  toTokenID: Int!
 
   tokenBalances: [AccountTokenBalance!]
 
@@ -646,6 +705,8 @@ type Add implements Transaction @entity {
   from: String!
   "[RAW L2 DATA] Address string of the account that received the tokens"
   to: String!
+  "[RAW L2 DATA] Token ID of the token transfered. Mainly used for NFT transfers"
+  toTokenID: Int!
 
   tokenBalances: [AccountTokenBalance!]
 
@@ -698,6 +759,8 @@ type Remove implements Transaction @entity {
   from: String!
   "[RAW L2 DATA] Address string of the account that received the tokens"
   to: String!
+  "[RAW L2 DATA] Token ID of the token transfered. Mainly used for NFT transfers"
+  toTokenID: Int!
 
   tokenBalances: [AccountTokenBalance!]
 
