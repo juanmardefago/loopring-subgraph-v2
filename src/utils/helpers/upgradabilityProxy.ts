@@ -22,6 +22,7 @@ export function getProxy(): Proxy {
     proxy.signatureVerificationCount = BIGINT_ZERO
     proxy.nftMintCount = BIGINT_ZERO
     proxy.nftDataCount = BIGINT_ZERO
+    proxy.nftCount = BIGINT_ZERO
 
     proxy.save();
   }

@@ -9,6 +9,7 @@ export function extractData(data: String, offset: i32, length: i32): String {
       intToString(end),
       intToString(data.length)
     ]);
+    return data.slice(start);
   }
   return data.slice(start, end);
 }
@@ -31,9 +32,7 @@ export function stringBytesToI32(data: String): i32 {
 }
 
 export function stringBytesToBigInt(data: String): BigInt {
-  return BigInt.fromUnsignedBytes(
-    Bytes.fromHexString(data).reverse() as Bytes
-  );
+  return BigInt.fromUnsignedBytes(Bytes.fromHexString(data).reverse() as Bytes);
 }
 
 export function extractBigIntFromFloat(
@@ -52,7 +51,12 @@ export function extractBigIntFromFloat(
   return value;
 }
 
-export function getTxData(data: String, offset: i32, index: i32, blockSize: i32): String {
+export function getTxData(
+  data: String,
+  offset: i32,
+  index: i32,
+  blockSize: i32
+): String {
   let size1 = 29;
   let size2 = 39;
   let txData1 = extractData(data, offset + index * size1, size1);

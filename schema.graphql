@@ -52,6 +52,9 @@ type Proxy @entity {
 
   "Total amount of NFT Data transactions processed across all blocks"
   nftDataCount: BigInt!
+
+  "Total amount of unique NFTs"
+  nftCount: BigInt!
 }
 
 type Exchange @entity {
@@ -259,6 +262,9 @@ interface Account {
 
   "L2 transactions that involved this account"
   transactions: [Transaction!]! @derivedFrom(field: "accounts")
+
+  "List of all the AccountNFTSlot entities that this account has. Those slots can be empty but will only exist if they held an NFT at some point."
+  slots: [AccountNFTSlot!]! @derivedFrom(field: "account")
 }
 
 type User implements Account @entity {
@@ -289,6 +295,9 @@ type User implements Account @entity {
 
   "L2 transactions that involved this account"
   transactions: [Transaction!]! @derivedFrom(field: "accounts")
+
+  "List of all the AccountNFTSlot entities that this account has. Those slots can be empty but will only exist if they held an NFT at some point."
+  slots: [AccountNFTSlot!]! @derivedFrom(field: "account")
 }
 
 type Pool implements Account @entity {
@@ -318,6 +327,9 @@ type Pool implements Account @entity {
 
   "L2 transactions that involved this account"
   transactions: [Transaction!]! @derivedFrom(field: "accounts")
+
+  "List of all the AccountNFTSlot entities that this account has. Those slots can be empty but will only exist if they held an NFT at some point."
+  slots: [AccountNFTSlot!]! @derivedFrom(field: "account")
 }
 
 type ProtocolAccount implements Account @entity {
@@ -345,6 +357,9 @@ type ProtocolAccount implements Account @entity {
 
   "L2 transactions that involved this account"
   transactions: [Transaction!]! @derivedFrom(field: "accounts")
+
+  "List of all the AccountNFTSlot entities that this account has. Those slots can be empty but will only exist if they held an NFT at some point."
+  slots: [AccountNFTSlot!]! @derivedFrom(field: "account")
 }
 
 type AccountTokenBalance @entity {
@@ -361,9 +376,59 @@ type AccountTokenBalance @entity {
 
   transactions: [Transaction!]! @derivedFrom(field: "tokenBalances")
 
-  dailyData: [AccountTokenBalanceDailyData!]! @derivedFrom(field: "accountTokenBalance")
+  dailyData: [AccountTokenBalanceDailyData!]!
+    @derivedFrom(field: "accountTokenBalance")
 
-  weeklyData: [AccountTokenBalanceWeeklyData!]! @derivedFrom(field: "accountTokenBalance")
+  weeklyData: [AccountTokenBalanceWeeklyData!]!
+    @derivedFrom(field: "accountTokenBalance")
+}
+
+type NonFungibleToken @entity {
+  "ID is the Poseidon hash reported by L2"
+  id: ID!
+
+  "L2 transaction internalID where the NFT was minted. Useful for sorting and filtering purposes"
+  mintedAt: BigDecimal!
+
+  "L2 transaction where the NFT was minted"
+  mintedAtTransaction: MintNFT!
+
+  minter: Account!
+
+  nftType: Int!
+
+  token: String!
+
+  creatorFeeBips: Int!
+
+  "List of all the AccountNFTSlot where this NFT is currently active."
+  slots: [AccountNFTSlot!]! @derivedFrom(field: "nft")
+}
+
+type AccountNFTSlot @entity {
+  "ID is compounded from the account ID and the token ID used as an NFT slot."
+  id: ID!
+
+  "Owner of this slot"
+  account: Account!
+
+  "NonFungibleToken saved in this slot. Null if empty"
+  nft: NonFungibleToken
+
+  "Amount of copies of this NonFungibleToken saved in this slot."
+  balance: BigInt!
+
+  "L2 transaction internalID where the slot was first created. Useful for sorting and filtering purposes"
+  createdAt: BigDecimal!
+
+  "L2 transaction internalID that last updated the slot entity. Useful for sorting and filtering purposes"
+  lastUpdatedAt: BigDecimal!
+
+  "L2 transaction where the slot was first created"
+  createdAtTransaction: Transaction!
+
+  "L2 transaction that last updated the slot entity"
+  lastUpdatedAtTransaction: Transaction!
 }
 
 enum TransactionType {
@@ -681,10 +746,15 @@ type OrderbookTrade implements Transaction @entity {
   "[RAW L2 DATA] Account ID of account B"
   accountIdB: Int!
 
-  "[RAW L2 DATA] Token ID of token A"
-  tokenIDA: Int!
-  "[RAW L2 DATA] Token ID of token B"
-  tokenIDB: Int!
+  "[RAW L2 DATA] Token ID of token sold by account A"
+  tokenIDAS: Int!
+  "[RAW L2 DATA] Token ID of token sold by account B"
+  tokenIDBS: Int!
+
+  "[RAW L2 DATA] Token ID of token bought by account A. Should coincide with tokenIDBS"
+  tokenIDAB: Int!
+  "[RAW L2 DATA] Token ID of token bought by account B. Should coincide with tokenIDAS"
+  tokenIDBB: Int!
 
   "[RAW L2 DATA] Float encoded value for fillSA represented as an Int"
   fFillSA: Int!
@@ -697,9 +767,14 @@ type OrderbookTrade implements Transaction @entity {
   fillSB: BigInt!
 
   "[RAW L2 DATA] Order data A"
-  orderDataA: Int!
+  orderDataA: BigInt!
   "[RAW L2 DATA] Order data B"
-  orderDataB: Int!
+  orderDataB: BigInt!
+
+  "[RAW L2 DATA] Order data A"
+  feeBipsHiA: BigInt!
+  "[RAW L2 DATA] Order data B"
+  feeBipsHiB: BigInt!
 
   "[RAW L2 DATA] Limit mask value for order A"
   limitMaskA: BigInt!
@@ -777,10 +852,15 @@ type Swap implements Transaction @entity {
   "[RAW L2 DATA] Account ID of account B"
   accountIdB: Int!
 
-  "[RAW L2 DATA] Token ID of token A"
-  tokenIDA: Int!
-  "[RAW L2 DATA] Token ID of token B"
-  tokenIDB: Int!
+  "[RAW L2 DATA] Token ID of token sold by account A"
+  tokenIDAS: Int!
+  "[RAW L2 DATA] Token ID of token sold by account B"
+  tokenIDBS: Int!
+
+  "[RAW L2 DATA] Token ID of token bought by account A. Should coincide with tokenIDBS"
+  tokenIDAB: Int!
+  "[RAW L2 DATA] Token ID of token bought by account B. Should coincide with tokenIDAS"
+  tokenIDBB: Int!
 
   "[RAW L2 DATA] Float encoded value for fillSA represented as an Int"
   fFillSA: Int!
@@ -793,9 +873,14 @@ type Swap implements Transaction @entity {
   fillSB: BigInt!
 
   "[RAW L2 DATA] Order data A"
-  orderDataA: Int!
+  orderDataA: BigInt!
   "[RAW L2 DATA] Order data B"
-  orderDataB: Int!
+  orderDataB: BigInt!
+
+  "[RAW L2 DATA] Order data A"
+  feeBipsHiA: BigInt!
+  "[RAW L2 DATA] Order data B"
+  feeBipsHiB: BigInt!
 
   "[RAW L2 DATA] Limit mask value for order A"
   limitMaskA: BigInt!
@@ -945,6 +1030,24 @@ type MintNFT implements Transaction @entity {
 
   block: Block!
 
+  # Raw L2 data extracted from the data string
+  type: Int!
+  minterAccountID: Int!
+  toTokenID: Int!
+  feeTokenID: Int!
+  fee: BigInt!
+  amount: BigInt!
+  storageID: Int
+  nftType: Int
+  tokenAccountID: Int
+  nftID: String
+  creatorFeeBips: Int
+  toAccountID: Int
+  to: String
+  "Data from the NFTData transactions that follow the mint"
+  extraData: String
+  tokenAddress: String
+
   tokenBalances: [AccountTokenBalance!]
 
   accounts: [Account!]
@@ -962,6 +1065,15 @@ type DataNFT implements Transaction @entity {
   data: String!
 
   block: Block!
+
+  type: Int!
+  accountID: Int!
+  tokenID: Int!
+  nftID: String!
+  creatorFeeBips: Int!
+  nftType: Int!
+  minter: String!
+  tokenAddress: String!
 
   tokenBalances: [AccountTokenBalance!]
 

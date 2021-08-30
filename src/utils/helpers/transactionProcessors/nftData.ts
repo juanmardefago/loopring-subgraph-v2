@@ -77,8 +77,8 @@ export function processNFTData(
 ): void {
   proxy.nftDataCount = proxy.nftDataCount.plus(BIGINT_ONE);
   block.nftDataCount = block.nftDataCount.plus(BIGINT_ONE);
-  proxy.transactionCount = proxy.transactionCount + BIGINT_ONE
-  block.transactionCount = block.transactionCount + BIGINT_ONE
+  proxy.transactionCount = proxy.transactionCount + BIGINT_ONE;
+  block.transactionCount = block.transactionCount + BIGINT_ONE;
 
   let transaction = new DataNFT(id);
   transaction.typename = TRANSACTION_NFT_DATA_TYPENAME;
@@ -88,5 +88,26 @@ export function processNFTData(
 
   let offset = 1; // First byte is tx type
 
-  // TODO: Implement nft data decoding, using the example code above.
+  transaction.type = extractInt(data, offset, 1);
+  offset += 1;
+
+  transaction.accountID = extractInt(data, offset, 4);
+  offset += 4;
+  transaction.tokenID = extractInt(data, offset, 2);
+  offset += 2;
+  transaction.nftID = "0x" + extractData(data, offset, 32);
+  offset += 32;
+  transaction.creatorFeeBips = extractInt(data, offset, 1);
+  offset += 1;
+  transaction.nftType = extractInt(data, offset, 1);
+  offset += 1;
+  if (transaction.type == 0) {
+    transaction.minter = extractData(data, offset, 20);
+    offset += 20;
+  } else {
+    transaction.tokenAddress = extractData(data, offset, 20);
+    offset += 20;
+  }
+
+  transaction.save();
 }

@@ -4,22 +4,35 @@ import {
   Token,
   User,
   Pool,
-  Proxy
+  Proxy,
+  NonFungibleToken
 } from "../../../../generated/schema";
-import { BigInt, Address, Bytes } from "@graphprotocol/graph-ts";
-import { extractData, extractBigInt, extractInt } from "../data";
+import { BigInt, Address, Bytes, log } from "@graphprotocol/graph-ts";
+import {
+  extractData,
+  extractBigInt,
+  extractInt,
+  extractBigIntFromFloat
+} from "../data";
 import {
   createIfNewAccount,
   getToken,
   intToString,
   getOrCreateAccountTokenBalance,
-  compoundIdToSortableDecimal
+  compoundIdToSortableDecimal,
+  getOrCreateNFT,
+  getOrCreateAccountNFTSlot
 } from "../index";
-import { TRANSACTION_NFT_MINT_TYPENAME, BIGINT_ONE } from "../../constants";
+import {
+  TRANSACTION_NFT_MINT_TYPENAME,
+  BIGINT_ONE,
+  TRANSACTION_NFT_DATA
+} from "../../constants";
 
 // interface NftMint {
 //   type?: number;
 //   minterAccountID?: number;
+//   tokenAccountID?: number;
 //   toAccountID?: number;
 //   toTokenID?: number;
 //   nftID?: string;
@@ -27,7 +40,7 @@ import { TRANSACTION_NFT_MINT_TYPENAME, BIGINT_ONE } from "../../constants";
 //   feeTokenID?: number;
 //   fee?: BN;
 //   validUntil?: number;
-//   nonce?: number;
+//   storageID?: number;
 //   minter?: string;
 //   to?: string;
 //   nftData?: string;
@@ -46,6 +59,9 @@ import { TRANSACTION_NFT_MINT_TYPENAME, BIGINT_ONE } from "../../constants";
 //     txData: Bitstream
 //   ) {
 //     const mint = this.extractData(txData);
+//     if (mint.type === 0) {
+//       mint.tokenAddress = state.accounts[mint.tokenAccountID].owner;
+//     }
 //
 //     const minter = state.getAccount(mint.minterAccountID);
 //     mint.minter = minter.owner;
@@ -71,7 +87,14 @@ import { TRANSACTION_NFT_MINT_TYPENAME, BIGINT_ONE } from "../../constants";
 //
 //     minter.getBalance(mint.feeTokenID).balance.isub(mint.fee);
 //
-//     minter.nonce++;
+//     // Nonce
+//     if (mint.type !== 2) {
+//       const storage = minter
+//         .getBalance(mint.feeTokenID)
+//         .getStorage(mint.storageID);
+//       storage.storageID = mint.storageID;
+//       storage.data = new BN(1);
+//     }
 //
 //     const operator = state.getAccount(block.operatorAccountID);
 //     operator.getBalance(mint.feeTokenID).balance.iadd(mint.fee);
@@ -95,14 +118,16 @@ import { TRANSACTION_NFT_MINT_TYPENAME, BIGINT_ONE } from "../../constants";
 //     offset += 2;
 //     mint.fee = fromFloat(data.extractUint16(offset), Constants.Float16Encoding);
 //     offset += 2;
+//     mint.amount = data.extractUint96(offset);
+//     offset += 12;
+//     mint.storageID = data.extractUint32(offset);
+//     offset += 4;
 //
 //     if (mint.type === 0) {
-//       mint.amount = new BN(data.extractUint16(offset));
-//       offset += 2;
 //       mint.nftType = data.extractUint8(offset);
 //       offset += 1;
-//       mint.tokenAddress = data.extractAddress(offset);
-//       offset += 20;
+//       mint.tokenAccountID = data.extractUint32(offset);
+//       offset += 4;
 //       mint.nftID = "0x" + data.extractBytes32(offset).toString("hex");
 //       offset += 32;
 //       mint.creatorFeeBips = data.extractUint8(offset);
@@ -114,10 +139,6 @@ import { TRANSACTION_NFT_MINT_TYPENAME, BIGINT_ONE } from "../../constants";
 //       offset += 4;
 //       mint.to = data.extractAddress(offset);
 //       offset += 20;
-//       mint.amount = data.extractUint96(offset);
-//       offset += 12;
-//       mint.nonce = data.extractUint32(offset);
-//       offset += 4;
 //
 //       // Read the following NFT data tx
 //       {
@@ -182,5 +203,126 @@ export function processNFTMint(
 
   let offset = 1; // First byte is tx type
 
-  // TODO: Implement nft minting decoding, using the example code above.
+  // Check that this is a conditional update
+  transaction.type = extractInt(data, offset, 1);
+  offset += 1;
+
+  transaction.minterAccountID = extractInt(data, offset, 4);
+  offset += 4;
+  transaction.toTokenID = extractInt(data, offset, 2);
+  offset += 2;
+  transaction.feeTokenID = extractInt(data, offset, 2);
+  offset += 2;
+  transaction.fee = extractBigIntFromFloat(data, offset, 2, 5, 11, 10);
+  offset += 2;
+  transaction.amount = extractBigInt(data, offset, 12);
+  offset += 12;
+  transaction.storageID = extractInt(data, offset, 4);
+  offset += 4;
+
+  if (transaction.type == 0) {
+    transaction.nftType = extractInt(data, offset, 1);
+    offset += 1;
+    transaction.tokenAccountID = extractInt(data, offset, 4);
+    offset += 4;
+    transaction.nftID = "0x" + extractData(data, offset, 32);
+    offset += 32;
+    transaction.creatorFeeBips = extractInt(data, offset, 1);
+    offset += 1;
+
+    transaction.toAccountID = transaction.minterAccountID;
+  } else {
+    transaction.toAccountID = extractInt(data, offset, 4);
+    offset += 4;
+    transaction.to = extractData(data, offset, 20);
+    offset += 20;
+  }
+
+  offset = 68;
+  transaction.extraData = extractData(data, offset, 136);
+  // Read the following NFT data tx
+  let firstDataSegment = extractData(data, offset, 68);
+  if (firstDataSegment.length == 68) {
+    let firstDataSegmentOffset = 0;
+
+    // Get the tx type of the extra data to check that it's an NFTData tx
+    let txTypeFirstSegment = extractData(
+      firstDataSegment,
+      firstDataSegmentOffset,
+      1
+    );
+    firstDataSegmentOffset += 8; // Skips all other NFTData fields that we don't care about
+
+    if (txTypeFirstSegment != TRANSACTION_NFT_DATA) {
+      log.warning(
+        "First segment of data for mint transaction with ID: {} isn't of type NFTData. Actual type: {}, expected type: {}",
+        [transaction.id, txTypeFirstSegment, TRANSACTION_NFT_DATA]
+      );
+    }
+
+    transaction.nftID =
+      "0x" + extractData(firstDataSegment, firstDataSegmentOffset, 32);
+    firstDataSegmentOffset += 32;
+    transaction.creatorFeeBips = extractInt(
+      firstDataSegment,
+      firstDataSegmentOffset,
+      1
+    );
+
+    offset = 136;
+    let secondDataSegment = extractData(data, offset, 68);
+    if (secondDataSegment.length == 68) {
+      let secondDataSegmentOffset = 0;
+
+      // Get the tx type of the extra data to check that it's an NFTData tx
+      let txTypeSecondSegment = extractData(
+        secondDataSegment,
+        secondDataSegmentOffset,
+        1
+      );
+      secondDataSegmentOffset += 1;
+
+      if (txTypeSecondSegment != TRANSACTION_NFT_DATA) {
+        log.warning(
+          "Second segment of data for mint transaction with ID: {} isn't of type NFTData. Actual type: {}, expected type: {}",
+          [transaction.id, txTypeSecondSegment, TRANSACTION_NFT_DATA]
+        );
+      }
+
+      let nftDataTxType = extractInt(data, offset, 1);
+      secondDataSegmentOffset += 1 + 4 + 2 + 32 + 1; // Skips all other NFTData fields that we don't care about
+
+      if (nftDataTxType != 1) {
+        log.warning(
+          "NFTDATA tx type for the second segment is unexpected.",
+          []
+        );
+      }
+
+      transaction.nftType = extractInt(data, offset, 1);
+      offset += 1;
+      transaction.tokenAddress = extractData(data, offset, 20);
+      offset += 20;
+    }
+  }
+
+  let nft = getOrCreateNFT(transaction.nftID, transaction.id, proxy);
+  nft.minter = intToString(transaction.minterAccountID);
+  nft.nftType = transaction.nftType;
+  nft.token = transaction.tokenAddress;
+  nft.creatorFeeBips = transaction.creatorFeeBips;
+  nft.save();
+
+  let receiverAccountNFTSlot = getOrCreateAccountNFTSlot(
+    transaction.toAccountID,
+    transaction.toTokenID,
+    transaction.id
+  );
+  receiverAccountNFTSlot.nft = nft.id;
+  receiverAccountNFTSlot.balance = receiverAccountNFTSlot.balance.plus(
+    transaction.amount
+  );
+  receiverAccountNFTSlot.save();
+
+  transaction.save();
 }
