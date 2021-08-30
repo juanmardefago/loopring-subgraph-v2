@@ -12,6 +12,7 @@ export function getProxy(): Proxy {
     proxy.transactionCount = BIGINT_ZERO;
     proxy.depositCount = BIGINT_ZERO
     proxy.withdrawalCount = BIGINT_ZERO
+    proxy.withdrawalNFTCount = BIGINT_ZERO
     proxy.transferCount = BIGINT_ZERO
     proxy.transferNFTCount = BIGINT_ZERO
     proxy.addCount = BIGINT_ZERO

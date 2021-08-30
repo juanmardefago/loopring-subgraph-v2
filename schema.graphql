@@ -23,6 +23,9 @@ type Proxy @entity {
   "Total amount of Withdrawal transactions processed across all blocks"
   withdrawalCount: BigInt!
 
+  "Total amount of WithdrawalNFT transactions processed across all blocks"
+  withdrawalNFTCount: BigInt!
+
   "Total amount of Transfer transactions processed across all blocks"
   transferCount: BigInt!
 
@@ -206,6 +209,9 @@ type Block @entity {
 
   "Total amount of Withdrawal transactions processed across all blocks"
   withdrawalCount: BigInt!
+
+  "Total amount of WithdrawalNFT transactions processed across all blocks"
+  withdrawalNFTCount: BigInt!
 
   "Total amount of Transfer transactions processed across all blocks"
   transferCount: BigInt!
@@ -450,6 +456,8 @@ enum TransactionType {
   DataNFT
   Add
   Remove
+  TransferNFT
+  WithdrawalNFT
 }
 
 interface Transaction {
@@ -525,6 +533,53 @@ type Withdrawal implements Transaction @entity {
 
   "Token entity with information about the withdrawn token"
   token: Token!
+
+  "Token entity with information about the token used to pay the operator fees"
+  feeToken: Token!
+
+  # Raw data parsed from the L2 data
+  "[RAW L2 DATA] Withdrawal type"
+  type: Int!
+  "[RAW L2 DATA] Address string of the account that withdrew"
+  from: String!
+  "[RAW L2 DATA] Account ID for the account that withdrew"
+  fromAccountID: Int!
+  "[RAW L2 DATA] Token ID of the withdrawn token"
+  tokenID: Int!
+  "[RAW L2 DATA] Amount withdrawn"
+  amount: BigInt!
+  "[RAW L2 DATA] Token ID of token used to pay the operator fees"
+  feeTokenID: Int!
+  "[RAW L2 DATA] Fee amount paid"
+  fee: BigInt!
+  "[RAW L2 DATA] On-chain data hash"
+  onchainDataHash: String!
+  "[RAW L2 DATA] StorageID"
+  storageID: Int!
+
+  tokenBalances: [AccountTokenBalance!]
+
+  accounts: [Account!]
+}
+
+type WithdrawalNFT implements Transaction @entity {
+  id: ID!
+
+  "Explicit copy of __typename to make it usable when filtering"
+  typename: TransactionType!
+
+  "ID represented as a BigDecimal for sorting purposes"
+  internalID: BigDecimal!
+
+  data: String!
+
+  block: Block!
+
+  "Account entity that withdrew the tokens"
+  fromAccount: Account!
+
+  "Slot entity with information about the withdrawn NFT"
+  slot: AccountNFTSlot!
 
   "Token entity with information about the token used to pay the operator fees"
   feeToken: Token!

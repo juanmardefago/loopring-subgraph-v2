@@ -28,6 +28,7 @@ export const TRANSACTION_SIGNATURE_VERIFICATION_TYPENAME =
 export const TRANSACTION_NFT_MINT_TYPENAME = "MintNFT";
 export const TRANSACTION_NFT_DATA_TYPENAME = "DataNFT";
 export const TRANSACTION_TRANSFER_NFT_TYPENAME = "TransferNFT"; // This is a parsed Transfer transaction. Doesn't exist in the raw data
+export const TRANSACTION_WITHDRAWAL_NFT_TYPENAME = "WithdrawalNFT"; // This is a parsed Withdrawal transaction. Doesn't exist in the raw data
 export const TRANSACTION_ADD_TYPENAME = "Add"; // This is a parsed Transfer transaction. Doesn't exist in the raw data
 export const TRANSACTION_REMOVE_TYPENAME = "Remove"; // This is a parsed Transfer transaction. Doesn't exist in the raw data
 export const TRANSACTION_AMM_SWAP_TYPENAME = "Swap"; // This is a parsed SpotTrade transaction. Doesn't exist in the raw data
