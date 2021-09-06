@@ -19,6 +19,8 @@ export function getProxy(): Proxy {
     proxy.removeCount = BIGINT_ZERO
     proxy.orderbookTradeCount = BIGINT_ZERO
     proxy.swapCount = BIGINT_ZERO
+    proxy.swapNFTCount = BIGINT_ZERO
+    proxy.tradeNFTCount = BIGINT_ZERO
     proxy.accountUpdateCount = BIGINT_ZERO
     proxy.ammUpdateCount = BIGINT_ZERO
     proxy.signatureVerificationCount = BIGINT_ZERO

@@ -44,6 +44,12 @@ type Proxy @entity {
   "Total amount of Swap transactions processed across all blocks"
   swapCount: BigInt!
 
+  "Total amount of TradeNFT transactions processed across all blocks"
+  tradeNFTCount: BigInt!
+
+  "Total amount of SwapNFT transactions processed across all blocks"
+  swapNFTCount: BigInt!
+
   "Total amount of AccountUpdate transactions processed across all blocks"
   accountUpdateCount: BigInt!
 
@@ -204,46 +210,52 @@ type Block @entity {
   "Total amount of transactions processed on this block. Should coincide with the lenght of the transactions list"
   transactionCount: BigInt!
 
-  "Total amount of Deposit transactions processed across all blocks"
+  "Total amount of Deposit transactions processed on this block"
   depositCount: BigInt!
 
-  "Total amount of Withdrawal transactions processed across all blocks"
+  "Total amount of Withdrawal transactions processed on this block"
   withdrawalCount: BigInt!
 
-  "Total amount of WithdrawalNFT transactions processed across all blocks"
+  "Total amount of WithdrawalNFT transactions processed on this block"
   withdrawalNFTCount: BigInt!
 
-  "Total amount of Transfer transactions processed across all blocks"
+  "Total amount of Transfer transactions processed on this block"
   transferCount: BigInt!
 
-  "Total amount of Transfer transactions processed across all blocks"
+  "Total amount of Transfer transactions processed on this block"
   transferNFTCount: BigInt!
 
-  "Total amount of Add transactions processed across all blocks"
+  "Total amount of Add transactions processed on this block"
   addCount: BigInt!
 
-  "Total amount of Remove transactions processed across all blocks"
+  "Total amount of Remove transactions processed on this block"
   removeCount: BigInt!
 
-  "Total amount of OrderbookTrade transactions processed across all blocks"
+  "Total amount of OrderbookTrade transactions processed on this block"
   orderbookTradeCount: BigInt!
 
-  "Total amount of Swap transactions processed across all blocks"
+  "Total amount of Swap transactions processed on this block"
   swapCount: BigInt!
 
-  "Total amount of AccountUpdate transactions processed across all blocks"
+  "Total amount of TradeNFT transactions processed on this block"
+  tradeNFTCount: BigInt!
+
+  "Total amount of SwapNFT transactions processed on this block"
+  swapNFTCount: BigInt!
+
+  "Total amount of AccountUpdate transactions processed on this block"
   accountUpdateCount: BigInt!
 
-  "Total amount of AMMUpdate transactions processed across all blocks"
+  "Total amount of AMMUpdate transactions processed on this block"
   ammUpdateCount: BigInt!
 
-  "Total amount of SignatureVerification transactions processed across all blocks"
+  "Total amount of SignatureVerification transactions processed on this block"
   signatureVerificationCount: BigInt!
 
-  "Total amount of NFT Mint transactions processed across all blocks"
+  "Total amount of NFT Mint transactions processed on this block"
   nftMintCount: BigInt!
 
-  "Total amount of NFT Data transactions processed across all blocks"
+  "Total amount of NFT Data transactions processed on this block"
   nftDataCount: BigInt!
 }
 
@@ -458,6 +470,8 @@ enum TransactionType {
   Remove
   TransferNFT
   WithdrawalNFT
+  TradeNFT
+  SwapNFT
 }
 
 interface Transaction {
@@ -964,6 +978,211 @@ type Swap implements Transaction @entity {
 
   "Standardized Pair entity for this trade"
   pair: Pair!
+
+  # Raw data parsed from the L2 data
+  "[RAW L2 DATA] StorageID for account A"
+  storageIdA: Int!
+  "[RAW L2 DATA] StorageID for account B"
+  storageIdB: Int!
+
+  "[RAW L2 DATA] Account ID of account A"
+  accountIdA: Int!
+  "[RAW L2 DATA] Account ID of account B"
+  accountIdB: Int!
+
+  "[RAW L2 DATA] Token ID of token sold by account A"
+  tokenIDAS: Int!
+  "[RAW L2 DATA] Token ID of token sold by account B"
+  tokenIDBS: Int!
+
+  "[RAW L2 DATA] Token ID of token bought by account A. Should coincide with tokenIDBS"
+  tokenIDAB: Int!
+  "[RAW L2 DATA] Token ID of token bought by account B. Should coincide with tokenIDAS"
+  tokenIDBB: Int!
+
+  "[RAW L2 DATA] Float encoded value for fillSA represented as an Int"
+  fFillSA: Int!
+  "[RAW L2 DATA] Float encoded value for fillSB represented as an Int"
+  fFillSB: Int!
+
+  "[RAW L2 DATA] Amount of token A sold by Account A"
+  fillSA: BigInt!
+  "[RAW L2 DATA] Amount of token B sold by Account B"
+  fillSB: BigInt!
+
+  "[RAW L2 DATA] Order data A"
+  orderDataA: BigInt!
+  "[RAW L2 DATA] Order data B"
+  orderDataB: BigInt!
+
+  "[RAW L2 DATA] Order data A"
+  feeBipsHiA: BigInt!
+  "[RAW L2 DATA] Order data B"
+  feeBipsHiB: BigInt!
+
+  "[RAW L2 DATA] Limit mask value for order A"
+  limitMaskA: BigInt!
+  "[RAW L2 DATA] Fee bips for order A"
+  feeBipsA: BigInt!
+  "[RAW L2 DATA] Is fill amount for buy or sell for order A"
+  fillAmountBorSA: Boolean!
+
+  "[RAW L2 DATA] Limit mask value for order B"
+  limitMaskB: BigInt!
+  "[RAW L2 DATA] Fee bips for order B"
+  feeBipsB: BigInt!
+  "[RAW L2 DATA] Is fill amount for buy or sell for order B"
+  fillAmountBorSB: Boolean!
+
+  "[RAW L2 DATA] Amount of token B bought by Account A"
+  fillBA: BigInt!
+  "[RAW L2 DATA] Amount of token A bought by Account B"
+  fillBB: BigInt!
+
+  "[RAW L2 DATA] Fee paid by Account A with Token B"
+  feeA: BigInt!
+  "[RAW L2 DATA] Protocol fees paid by Account A"
+  protocolFeeA: BigInt!
+
+  "[RAW L2 DATA] Fee paid by Account B with token A"
+  feeB: BigInt!
+  "[RAW L2 DATA] Protocol fees paid by Account B"
+  protocolFeeB: BigInt!
+
+  tokenBalances: [AccountTokenBalance!]
+
+  accounts: [Account!]
+}
+
+type TradeNFT implements Transaction @entity {
+  id: ID!
+
+  "Explicit copy of __typename to make it usable when filtering"
+  typename: TransactionType!
+
+  "ID represented as a BigDecimal for sorting purposes"
+  internalID: BigDecimal!
+
+  data: String!
+
+  block: Block!
+
+  "Account entity that sold the NFT"
+  accountSeller: Account!
+  "Account entity that bought the NFT"
+  accountBuyer: Account!
+
+  "Original slot of the NFT being traded. Represents the slot where the NFT was stored for the seller"
+  slotSeller: AccountNFTSlot!
+  "Target slot of the NFT being traded. Represents the slot where the NFT is stored once transferred to the buyer"
+  slotBuyer: AccountNFTSlot!
+  "Token used to pay for the NFT and fees"
+  token: Token!
+
+  "Price paid for the NFT during this trade. Expressed as a BigInt. Denominated in units of token"
+  realizedNFTPrice: BigInt!
+
+  # Raw data parsed from the L2 data
+  "[RAW L2 DATA] StorageID for account A"
+  storageIdA: Int!
+  "[RAW L2 DATA] StorageID for account B"
+  storageIdB: Int!
+
+  "[RAW L2 DATA] Account ID of account A"
+  accountIdA: Int!
+  "[RAW L2 DATA] Account ID of account B"
+  accountIdB: Int!
+
+  "[RAW L2 DATA] Token ID of token sold by account A"
+  tokenIDAS: Int!
+  "[RAW L2 DATA] Token ID of token sold by account B"
+  tokenIDBS: Int!
+
+  "[RAW L2 DATA] Token ID of token bought by account A. Should coincide with tokenIDBS"
+  tokenIDAB: Int!
+  "[RAW L2 DATA] Token ID of token bought by account B. Should coincide with tokenIDAS"
+  tokenIDBB: Int!
+
+  "[RAW L2 DATA] Float encoded value for fillSA represented as an Int"
+  fFillSA: Int!
+  "[RAW L2 DATA] Float encoded value for fillSB represented as an Int"
+  fFillSB: Int!
+
+  "[RAW L2 DATA] Amount of token A sold by Account A"
+  fillSA: BigInt!
+  "[RAW L2 DATA] Amount of token B sold by Account B"
+  fillSB: BigInt!
+
+  "[RAW L2 DATA] Order data A"
+  orderDataA: BigInt!
+  "[RAW L2 DATA] Order data B"
+  orderDataB: BigInt!
+
+  "[RAW L2 DATA] Order data A"
+  feeBipsHiA: BigInt!
+  "[RAW L2 DATA] Order data B"
+  feeBipsHiB: BigInt!
+
+  "[RAW L2 DATA] Limit mask value for order A"
+  limitMaskA: BigInt!
+  "[RAW L2 DATA] Fee bips for order A"
+  feeBipsA: BigInt!
+  "[RAW L2 DATA] Is fill amount for buy or sell for order A"
+  fillAmountBorSA: Boolean!
+
+  "[RAW L2 DATA] Limit mask value for order B"
+  limitMaskB: BigInt!
+  "[RAW L2 DATA] Fee bips for order B"
+  feeBipsB: BigInt!
+  "[RAW L2 DATA] Is fill amount for buy or sell for order B"
+  fillAmountBorSB: Boolean!
+
+  "[RAW L2 DATA] Amount of token B bought by Account A"
+  fillBA: BigInt!
+  "[RAW L2 DATA] Amount of token A bought by Account B"
+  fillBB: BigInt!
+
+  "[RAW L2 DATA] Fee paid by Account A with Token B"
+  feeA: BigInt!
+  "[RAW L2 DATA] Protocol fees paid by Account A"
+  protocolFeeA: BigInt!
+
+  "[RAW L2 DATA] Fee paid by Account B with token A"
+  feeB: BigInt!
+  "[RAW L2 DATA] Protocol fees paid by Account B"
+  protocolFeeB: BigInt!
+
+  tokenBalances: [AccountTokenBalance!]
+
+  accounts: [Account!]
+}
+
+type SwapNFT implements Transaction @entity {
+  id: ID!
+
+  "Explicit copy of __typename to make it usable when filtering"
+  typename: TransactionType!
+
+  "ID represented as a BigDecimal for sorting purposes"
+  internalID: BigDecimal!
+
+  data: String!
+
+  block: Block!
+
+  "Account entity A"
+  accountA: Account!
+  "Account entity B"
+  accountB: Account!
+
+  "Original slot of NFT A for Account A."
+  slotASeller: AccountNFTSlot!
+  "Original slot of NFT B for Account B."
+  slotBSeller: AccountNFTSlot!
+  "Target slot of NFT B for Account A."
+  slotABuyer: AccountNFTSlot!
+  "Target slot of NFT A for Account B."
+  slotBBuyer: AccountNFTSlot!
 
   # Raw data parsed from the L2 data
   "[RAW L2 DATA] StorageID for account A"

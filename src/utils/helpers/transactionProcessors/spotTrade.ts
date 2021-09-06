@@ -6,7 +6,9 @@ import {
   Token,
   User,
   Pool,
-  Proxy
+  Proxy,
+  SwapNFT,
+  TradeNFT
 } from "../../../../generated/schema";
 import { BigInt, Address, Bytes } from "@graphprotocol/graph-ts";
 import {
@@ -30,14 +32,18 @@ import {
   calculatePrice,
   compoundIdToSortableDecimal,
   getAndUpdateAccountTokenBalanceDailyData,
-  getAndUpdateAccountTokenBalanceWeeklyData
+  getAndUpdateAccountTokenBalanceWeeklyData,
+  getOrCreateAccountNFTSlot
 } from "../index";
 import {
   BIGINT_ZERO,
   TRANSACTION_AMM_SWAP_TYPENAME,
+  TRANSACTION_SWAP_NFT_TYPENAME,
+  TRANSACTION_TRADE_NFT_TYPENAME,
   TRANSACTION_ORDERBOOK_TRADE_TYPENAME,
   USER_ACCOUNT_THRESHOLD,
-  BIGINT_ONE
+  BIGINT_ONE,
+  isNFT
 } from "../../constants";
 
 // interface SettlementValues {
@@ -397,403 +403,524 @@ export function processSpotTrade(
   let accountAID = intToString(transaction.accountIdA);
   let accountBID = intToString(transaction.accountIdB);
 
-  let tokenIDA = transaction.tokenIDAS
-  let tokenIDB = transaction.tokenIDBS
-
+  let tokenBalances = new Array<String>();
   let accounts = new Array<String>();
   accounts.push(accountAID);
   accounts.push(accountBID);
 
-  let tokenA = getToken(intToString(tokenIDA)) as Token;
-  let tokenB = getToken(intToString(tokenIDB)) as Token;
-
-  transaction.tokenA = tokenA.id;
-  transaction.tokenB = tokenB.id;
+  let tokenIDAS = transaction.tokenIDAS;
+  let tokenIDBS = transaction.tokenIDBS;
 
   // Further extraction of packed data
-  transaction.limitMaskA =
-    transaction.orderDataA & stringBytesToBigInt("80");
+  transaction.limitMaskA = transaction.orderDataA & stringBytesToBigInt("80");
   transaction.feeBipsA =
-    (transaction.feeBipsHiA << 6) | (transaction.orderDataA & stringBytesToBigInt("3F"));
+    (transaction.feeBipsHiA << 6) |
+    (transaction.orderDataA & stringBytesToBigInt("3F"));
   transaction.fillAmountBorSA = transaction.limitMaskA > BIGINT_ZERO;
 
-  transaction.limitMaskB =
-    transaction.orderDataB & stringBytesToBigInt("80");
+  transaction.limitMaskB = transaction.orderDataB & stringBytesToBigInt("80");
   transaction.feeBipsB =
-    (transaction.feeBipsHiB << 6) | (transaction.orderDataB & stringBytesToBigInt("3F"));
+    (transaction.feeBipsHiB << 6) |
+    (transaction.orderDataB & stringBytesToBigInt("3F"));
   transaction.fillAmountBorSB = transaction.limitMaskB > BIGINT_ZERO;
 
   // settlement values
   transaction.fillBA = transaction.fillSB;
   transaction.fillBB = transaction.fillSA;
 
-  transaction.feeA = calculateFee(transaction.fillBA, transaction.feeBipsA);
-  transaction.protocolFeeA = calculateProtocolFee(
-    transaction.fillBA,
-    block.protocolFeeTakerBips
-  );
+  if (isNFT(tokenIDAS) || isNFT(tokenIDBS)) {
+    // NFT trade/swap
+    let tokenIDAB =
+      transaction.tokenIDAB != 0
+        ? transaction.tokenIDAB
+        : transaction.tokenIDAS;
+    let tokenIDBB =
+      transaction.tokenIDBB != 0
+        ? transaction.tokenIDBB
+        : transaction.tokenIDBS;
 
-  transaction.feeB = calculateFee(transaction.fillBB, transaction.feeBipsB);
-  transaction.protocolFeeB = calculateProtocolFee(
-    transaction.fillBB,
-    block.protocolFeeMakerBips
-  );
+    // Check whether it's a swap or a trade
+    if (isNFT(tokenIDAS) && isNFT(tokenIDBS)) {
+      let coercedTransaction = transaction as SwapNFT;
+      proxy.swapNFTCount = proxy.swapNFTCount.plus(BIGINT_ONE);
+      block.swapNFTCount = block.swapNFTCount.plus(BIGINT_ONE);
 
-  let tokenBalances = new Array<String>();
+      let slotASeller = getOrCreateAccountNFTSlot(
+        coercedTransaction.accountIdA,
+        tokenIDAS,
+        coercedTransaction.id
+      );
+      let slotBSeller = getOrCreateAccountNFTSlot(
+        coercedTransaction.accountIdB,
+        tokenIDBS,
+        coercedTransaction.id
+      );
+      let slotABuyer = getOrCreateAccountNFTSlot(
+        coercedTransaction.accountIdA,
+        tokenIDAB,
+        coercedTransaction.id
+      );
+      let slotBBuyer = getOrCreateAccountNFTSlot(
+        coercedTransaction.accountIdB,
+        tokenIDBB,
+        coercedTransaction.id
+      );
 
-  // Update token balances for account A
-  let accountTokenBalanceAA = getOrCreateAccountTokenBalance(
-    accountAID,
-    tokenA.id
-  );
-  accountTokenBalanceAA.balance = accountTokenBalanceAA.balance.minus(
-    transaction.fillSA
-  );
-  accountTokenBalanceAA.save();
-  tokenBalances.push(accountTokenBalanceAA.id);
+      // A buy and B sell
+      slotABuyer.balance = slotABuyer.balance.plus(coercedTransaction.fillSB);
+      slotABuyer.nft = slotBSeller.nft;
 
-  let accountTokenBalanceAB = getOrCreateAccountTokenBalance(
-    accountAID,
-    tokenB.id
-  );
-  accountTokenBalanceAB.balance = accountTokenBalanceAB.balance
-    .plus(transaction.fillBA)
-    .minus(transaction.feeA);
-  accountTokenBalanceAB.save();
-  tokenBalances.push(accountTokenBalanceAB.id);
+      slotBSeller.balance = slotBSeller.balance.minus(coercedTransaction.fillSB);
+      if (slotBSeller.balance <= BIGINT_ZERO) {
+        slotBSeller.nft = null;
+      }
 
-  // Update token balances for account B
-  let accountTokenBalanceBB = getOrCreateAccountTokenBalance(
-    accountBID,
-    tokenB.id
-  );
-  accountTokenBalanceBB.balance = accountTokenBalanceBB.balance.minus(
-    transaction.fillSB
-  );
-  accountTokenBalanceBB.save();
-  tokenBalances.push(accountTokenBalanceBB.id);
+      // B buy and A sell
+      slotBBuyer.balance = slotBBuyer.balance.plus(coercedTransaction.fillSA);
+      slotBBuyer.nft = slotASeller.nft;
 
-  let accountTokenBalanceBA = getOrCreateAccountTokenBalance(
-    accountBID,
-    tokenA.id
-  );
-  accountTokenBalanceBA.balance = accountTokenBalanceBA.balance
-    .plus(transaction.fillBB)
-    .minus(transaction.feeB);
-  accountTokenBalanceBA.save();
-  tokenBalances.push(accountTokenBalanceBA.id);
+      slotASeller.balance = slotASeller.balance.minus(coercedTransaction.fillSA);
+      if (slotASeller.balance <= BIGINT_ZERO) {
+        slotASeller.nft = null;
+      }
 
-  // Should also update operator account balance
-  let operatorId = intToString(block.operatorAccountID);
+      slotBBuyer.save();
+      slotASeller.save();
 
-  let operatorTokenBalanceA = getOrCreateAccountTokenBalance(
-    operatorId,
-    tokenA.id
-  );
-  operatorTokenBalanceA.balance = operatorTokenBalanceA.balance
-    .plus(transaction.feeB)
-    .minus(transaction.protocolFeeB);
-  operatorTokenBalanceA.save();
-  tokenBalances.push(operatorTokenBalanceA.id);
+      coercedTransaction.slotABuyer = slotABuyer.id;
+      coercedTransaction.slotBBuyer = slotBBuyer.id;
+      coercedTransaction.slotASeller = slotASeller.id;
+      coercedTransaction.slotBSeller = slotBSeller.id;
 
-  let operatorTokenBalanceB = getOrCreateAccountTokenBalance(
-    operatorId,
-    tokenB.id
-  );
-  operatorTokenBalanceB.balance = operatorTokenBalanceB.balance
-    .plus(transaction.feeA)
-    .minus(transaction.protocolFeeA);
-  operatorTokenBalanceB.save();
-  tokenBalances.push(operatorTokenBalanceB.id);
+      // TO-DO fees?
 
-  // update protocol balance
-  let protocolAccount = getProtocolAccount(transaction.id);
+    } else {
+      let coercedTransaction = transaction as TradeNFT;
+      proxy.tradeNFTCount = proxy.tradeNFTCount.plus(BIGINT_ONE);
+      block.tradeNFTCount = block.tradeNFTCount.plus(BIGINT_ONE);
 
-  let protocolTokenBalanceA = getOrCreateAccountTokenBalance(
-    protocolAccount.id,
-    tokenA.id
-  );
-  protocolTokenBalanceA.balance = protocolTokenBalanceA.balance.plus(
-    transaction.protocolFeeB
-  );
-  protocolTokenBalanceA.save();
-  tokenBalances.push(protocolTokenBalanceA.id);
+      let sellerId = isNFT(tokenIDAS) ? coercedTransaction.accountIdA : coercedTransaction.accountIdB;
+      let buyerId = isNFT(tokenIDAS) ? coercedTransaction.accountIdB : coercedTransaction.accountIdA;
+      let slotIdSeller = isNFT(tokenIDAS) ? tokenIDAS : tokenIDBS;
+      let slotIdBuyer = isNFT(tokenIDAS) ? tokenIDBB : tokenIDAB;
+      let tokenId = isNFT(tokenIDAS) ? tokenIDBS : tokenIDAS;
+      let amountNFT = isNFT(tokenIDAS)
+        ? coercedTransaction.fillSA
+        : coercedTransaction.fillSB;
+      let amountToken = isNFT(tokenIDAS)
+        ? coercedTransaction.fillSB
+        : coercedTransaction.fillSA;
 
-  let protocolTokenBalanceB = getOrCreateAccountTokenBalance(
-    protocolAccount.id,
-    tokenB.id
-  );
-  protocolTokenBalanceB.balance = protocolTokenBalanceB.balance.plus(
-    transaction.protocolFeeA
-  );
-  protocolTokenBalanceB.save();
-  tokenBalances.push(protocolTokenBalanceB.id);
+      coercedTransaction.accountSeller = intToString(sellerId);
+      coercedTransaction.accountBuyer = intToString(buyerId);
 
-  // Update pair info
-  transaction.tokenAPrice = calculatePrice(
-    tokenA as Token,
-    transaction.fillSA,
-    transaction.fillSB
-  );
-  transaction.tokenBPrice = calculatePrice(
-    tokenB as Token,
-    transaction.fillSB,
-    transaction.fillSA
-  );
+      // NFT slot transfer
+      let slotSeller = getOrCreateAccountNFTSlot(
+        sellerId,
+        slotIdSeller,
+        coercedTransaction.id
+      );
+      let slotBuyer = getOrCreateAccountNFTSlot(
+        buyerId,
+        slotIdBuyer,
+        coercedTransaction.id
+      );
 
-  let pair = getOrCreatePair(tokenIDA, tokenIDB);
+      slotBuyer.balance = slotBuyer.balance.plus(amountNFT);
+      slotBuyer.nft = slotSeller.nft;
 
-  let token0Price =
-    tokenIDA < tokenIDB
-      ? transaction.tokenAPrice
-      : transaction.tokenBPrice;
-  let token1Price =
-    tokenIDA < tokenIDB
-      ? transaction.tokenBPrice
-      : transaction.tokenAPrice;
-  let token0Amount =
-    tokenIDA < tokenIDB
-      ? transaction.fillSA
-      : transaction.fillSB;
-  let token1Amount =
-    tokenIDA < tokenIDB
-      ? transaction.fillSB
-      : transaction.fillSA;
+      slotSeller.balance = slotSeller.balance.minus(amountNFT);
+      if (slotSeller.balance <= BIGINT_ZERO) {
+        slotSeller.nft = null;
+      }
 
-  pair.token0Price = token0Price;
-  pair.token1Price = token1Price;
-  pair.tradedVolumeToken0 = pair.tradedVolumeToken0.plus(token0Amount);
-  pair.tradedVolumeToken1 = pair.tradedVolumeToken1.plus(token1Amount);
+      slotBuyer.save();
+      slotSeller.save();
 
-  tokenA.tradedVolume = tokenA.tradedVolume.plus(transaction.fillSA);
-  tokenB.tradedVolume = tokenB.tradedVolume.plus(transaction.fillSB);
+      coercedTransaction.slotBuyer = slotBuyer.id;
+      coercedTransaction.slotSeller = slotSeller.id;
 
-  transaction.pair = pair.id;
+      // ERC20 payment of the NFT trade
+      let token = getToken(intToString(tokenId)) as Token;
+      coercedTransaction.token = token.id;
 
-  let tokenADailyData = getAndUpdateTokenDailyData(
-    tokenA as Token,
-    block.timestamp
-  );
-  let tokenAWeeklyData = getAndUpdateTokenWeeklyData(
-    tokenA as Token,
-    block.timestamp
-  );
-  let tokenBDailyData = getAndUpdateTokenDailyData(
-    tokenB as Token,
-    block.timestamp
-  );
-  let tokenBWeeklyData = getAndUpdateTokenWeeklyData(
-    tokenB as Token,
-    block.timestamp
-  );
-  let pairDailyData = getAndUpdatePairDailyData(
-    pair as Pair,
-    token0Amount,
-    token1Amount,
-    block.timestamp
-  );
-  let pairWeeklyData = getAndUpdatePairWeeklyData(
-    pair as Pair,
-    token0Amount,
-    token1Amount,
-    block.timestamp
-  );
-
-  tokenADailyData.tradedVolume = tokenADailyData.tradedVolume.plus(
-    transaction.fillSA
-  );
-  tokenAWeeklyData.tradedVolume = tokenAWeeklyData.tradedVolume.plus(
-    transaction.fillSA
-  );
-  tokenBDailyData.tradedVolume = tokenBDailyData.tradedVolume.plus(
-    transaction.fillSB
-  );
-  tokenBWeeklyData.tradedVolume = tokenBWeeklyData.tradedVolume.plus(
-    transaction.fillSB
-  );
-
-  transaction.tokenBalances = tokenBalances;
-  transaction.accounts = accounts;
-
-  // Coerce the type of the Trade at the end, so we can reuse most of the code with no changes.
-  // This could be a lot cleaner if we could use interfaces in AssemblyScript
-  // After that we also need to update the breakdowns for every statistic we track
-  // on the various core, daily and weekly entities.
-  if (
-    transaction.accountIdA < USER_ACCOUNT_THRESHOLD ||
-    transaction.accountIdB < USER_ACCOUNT_THRESHOLD
-  ) {
-    proxy.swapCount = proxy.swapCount.plus(BIGINT_ONE);
-    block.swapCount = block.swapCount.plus(BIGINT_ONE);
-
-    let coercedTransaction = transaction as Swap;
-    coercedTransaction.pool =
-      transaction.accountIdA < transaction.accountIdB ? accountAID : accountBID;
-    coercedTransaction.account =
-      transaction.accountIdA < transaction.accountIdB ? accountBID : accountAID;
-    coercedTransaction.typename = TRANSACTION_AMM_SWAP_TYPENAME;
-    coercedTransaction.save();
-
-    tokenADailyData.tradedVolumeSwap = tokenADailyData.tradedVolumeSwap.plus(
-      transaction.fillSA
-    );
-    tokenAWeeklyData.tradedVolumeSwap = tokenAWeeklyData.tradedVolumeSwap.plus(
-      transaction.fillSA
-    );
-    tokenBDailyData.tradedVolumeSwap = tokenBDailyData.tradedVolumeSwap.plus(
-      transaction.fillSB
-    );
-    tokenBWeeklyData.tradedVolumeSwap = tokenBWeeklyData.tradedVolumeSwap.plus(
-      transaction.fillSB
-    );
-
-    tokenA.tradedVolumeSwap = tokenA.tradedVolumeSwap.plus(transaction.fillSA);
-    tokenB.tradedVolumeSwap = tokenB.tradedVolumeSwap.plus(transaction.fillSB);
-
-    pairDailyData.tradedVolumeToken0Swap = pairDailyData.tradedVolumeToken0Swap.plus(
-      token0Amount
-    );
-    pairDailyData.tradedVolumeToken1Swap = pairDailyData.tradedVolumeToken1Swap.plus(
-      token1Amount
-    );
-    pairWeeklyData.tradedVolumeToken0Swap = pairWeeklyData.tradedVolumeToken0Swap.plus(
-      token0Amount
-    );
-    pairWeeklyData.tradedVolumeToken1Swap = pairWeeklyData.tradedVolumeToken1Swap.plus(
-      token1Amount
-    );
-
-    pair.tradedVolumeToken0Swap = pair.tradedVolumeToken0Swap.plus(
-      token0Amount
-    );
-    pair.tradedVolumeToken1Swap = pair.tradedVolumeToken1Swap.plus(
-      token1Amount
-    );
+      // TO-DO fees and token balance updates
+    }
   } else {
-    proxy.orderbookTradeCount = proxy.orderbookTradeCount.plus(BIGINT_ONE);
-    block.orderbookTradeCount = block.orderbookTradeCount.plus(BIGINT_ONE);
+    // ERC20 trade/swap
 
-    transaction.accountA = accountAID;
-    transaction.accountB = accountBID;
-    transaction.typename = TRANSACTION_ORDERBOOK_TRADE_TYPENAME;
-    transaction.save();
+    let tokenA = getToken(intToString(tokenIDAS)) as Token;
+    let tokenB = getToken(intToString(tokenIDBS)) as Token;
 
-    tokenADailyData.tradedVolumeOrderbook = tokenADailyData.tradedVolumeOrderbook.plus(
+    transaction.tokenA = tokenA.id;
+    transaction.tokenB = tokenB.id;
+
+    transaction.feeA = calculateFee(transaction.fillBA, transaction.feeBipsA);
+    transaction.protocolFeeA = calculateProtocolFee(
+      transaction.fillBA,
+      block.protocolFeeTakerBips
+    );
+
+    transaction.feeB = calculateFee(transaction.fillBB, transaction.feeBipsB);
+    transaction.protocolFeeB = calculateProtocolFee(
+      transaction.fillBB,
+      block.protocolFeeMakerBips
+    );
+
+    // Update token balances for account A
+    let accountTokenBalanceAA = getOrCreateAccountTokenBalance(
+      accountAID,
+      tokenA.id
+    );
+    accountTokenBalanceAA.balance = accountTokenBalanceAA.balance.minus(
       transaction.fillSA
     );
-    tokenAWeeklyData.tradedVolumeOrderbook = tokenAWeeklyData.tradedVolumeOrderbook.plus(
+    accountTokenBalanceAA.save();
+    tokenBalances.push(accountTokenBalanceAA.id);
+
+    let accountTokenBalanceAB = getOrCreateAccountTokenBalance(
+      accountAID,
+      tokenB.id
+    );
+    accountTokenBalanceAB.balance = accountTokenBalanceAB.balance
+      .plus(transaction.fillBA)
+      .minus(transaction.feeA);
+    accountTokenBalanceAB.save();
+    tokenBalances.push(accountTokenBalanceAB.id);
+
+    // Update token balances for account B
+    let accountTokenBalanceBB = getOrCreateAccountTokenBalance(
+      accountBID,
+      tokenB.id
+    );
+    accountTokenBalanceBB.balance = accountTokenBalanceBB.balance.minus(
+      transaction.fillSB
+    );
+    accountTokenBalanceBB.save();
+    tokenBalances.push(accountTokenBalanceBB.id);
+
+    let accountTokenBalanceBA = getOrCreateAccountTokenBalance(
+      accountBID,
+      tokenA.id
+    );
+    accountTokenBalanceBA.balance = accountTokenBalanceBA.balance
+      .plus(transaction.fillBB)
+      .minus(transaction.feeB);
+    accountTokenBalanceBA.save();
+    tokenBalances.push(accountTokenBalanceBA.id);
+
+    // Should also update operator account balance
+    let operatorId = intToString(block.operatorAccountID);
+
+    let operatorTokenBalanceA = getOrCreateAccountTokenBalance(
+      operatorId,
+      tokenA.id
+    );
+    operatorTokenBalanceA.balance = operatorTokenBalanceA.balance
+      .plus(transaction.feeB)
+      .minus(transaction.protocolFeeB);
+    operatorTokenBalanceA.save();
+    tokenBalances.push(operatorTokenBalanceA.id);
+
+    let operatorTokenBalanceB = getOrCreateAccountTokenBalance(
+      operatorId,
+      tokenB.id
+    );
+    operatorTokenBalanceB.balance = operatorTokenBalanceB.balance
+      .plus(transaction.feeA)
+      .minus(transaction.protocolFeeA);
+    operatorTokenBalanceB.save();
+    tokenBalances.push(operatorTokenBalanceB.id);
+
+    // update protocol balance
+    let protocolAccount = getProtocolAccount(transaction.id);
+
+    let protocolTokenBalanceA = getOrCreateAccountTokenBalance(
+      protocolAccount.id,
+      tokenA.id
+    );
+    protocolTokenBalanceA.balance = protocolTokenBalanceA.balance.plus(
+      transaction.protocolFeeB
+    );
+    protocolTokenBalanceA.save();
+    tokenBalances.push(protocolTokenBalanceA.id);
+
+    let protocolTokenBalanceB = getOrCreateAccountTokenBalance(
+      protocolAccount.id,
+      tokenB.id
+    );
+    protocolTokenBalanceB.balance = protocolTokenBalanceB.balance.plus(
+      transaction.protocolFeeA
+    );
+    protocolTokenBalanceB.save();
+    tokenBalances.push(protocolTokenBalanceB.id);
+
+    // Update pair info
+    transaction.tokenAPrice = calculatePrice(
+      tokenA as Token,
+      transaction.fillSA,
+      transaction.fillSB
+    );
+    transaction.tokenBPrice = calculatePrice(
+      tokenB as Token,
+      transaction.fillSB,
       transaction.fillSA
     );
-    tokenBDailyData.tradedVolumeOrderbook = tokenBDailyData.tradedVolumeOrderbook.plus(
-      transaction.fillSB
+
+    let pair = getOrCreatePair(tokenIDAS, tokenIDBS);
+
+    let token0Price =
+      tokenIDAS < tokenIDBS ? transaction.tokenAPrice : transaction.tokenBPrice;
+    let token1Price =
+      tokenIDAS < tokenIDBS ? transaction.tokenBPrice : transaction.tokenAPrice;
+    let token0Amount =
+      tokenIDAS < tokenIDBS ? transaction.fillSA : transaction.fillSB;
+    let token1Amount =
+      tokenIDAS < tokenIDBS ? transaction.fillSB : transaction.fillSA;
+
+    pair.token0Price = token0Price;
+    pair.token1Price = token1Price;
+    pair.tradedVolumeToken0 = pair.tradedVolumeToken0.plus(token0Amount);
+    pair.tradedVolumeToken1 = pair.tradedVolumeToken1.plus(token1Amount);
+
+    tokenA.tradedVolume = tokenA.tradedVolume.plus(transaction.fillSA);
+    tokenB.tradedVolume = tokenB.tradedVolume.plus(transaction.fillSB);
+
+    transaction.pair = pair.id;
+
+    let tokenADailyData = getAndUpdateTokenDailyData(
+      tokenA as Token,
+      block.timestamp
     );
-    tokenBWeeklyData.tradedVolumeOrderbook = tokenBWeeklyData.tradedVolumeOrderbook.plus(
-      transaction.fillSB
+    let tokenAWeeklyData = getAndUpdateTokenWeeklyData(
+      tokenA as Token,
+      block.timestamp
+    );
+    let tokenBDailyData = getAndUpdateTokenDailyData(
+      tokenB as Token,
+      block.timestamp
+    );
+    let tokenBWeeklyData = getAndUpdateTokenWeeklyData(
+      tokenB as Token,
+      block.timestamp
+    );
+    let pairDailyData = getAndUpdatePairDailyData(
+      pair as Pair,
+      token0Amount,
+      token1Amount,
+      block.timestamp
+    );
+    let pairWeeklyData = getAndUpdatePairWeeklyData(
+      pair as Pair,
+      token0Amount,
+      token1Amount,
+      block.timestamp
     );
 
-    tokenA.tradedVolumeOrderbook = tokenA.tradedVolumeOrderbook.plus(
+    tokenADailyData.tradedVolume = tokenADailyData.tradedVolume.plus(
       transaction.fillSA
     );
-    tokenB.tradedVolumeOrderbook = tokenB.tradedVolumeOrderbook.plus(
+    tokenAWeeklyData.tradedVolume = tokenAWeeklyData.tradedVolume.plus(
+      transaction.fillSA
+    );
+    tokenBDailyData.tradedVolume = tokenBDailyData.tradedVolume.plus(
+      transaction.fillSB
+    );
+    tokenBWeeklyData.tradedVolume = tokenBWeeklyData.tradedVolume.plus(
       transaction.fillSB
     );
 
-    pairDailyData.tradedVolumeToken0Orderbook = pairDailyData.tradedVolumeToken0Orderbook.plus(
-      token0Amount
+    transaction.tokenBalances = tokenBalances;
+    transaction.accounts = accounts;
+
+    // Coerce the type of the Trade at the end, so we can reuse most of the code with no changes.
+    // This could be a lot cleaner if we could use interfaces in AssemblyScript
+    // After that we also need to update the breakdowns for every statistic we track
+    // on the various core, daily and weekly entities.
+    if (
+      transaction.accountIdA < USER_ACCOUNT_THRESHOLD ||
+      transaction.accountIdB < USER_ACCOUNT_THRESHOLD
+    ) {
+      proxy.swapCount = proxy.swapCount.plus(BIGINT_ONE);
+      block.swapCount = block.swapCount.plus(BIGINT_ONE);
+
+      let coercedTransaction = transaction as Swap;
+      coercedTransaction.pool =
+        transaction.accountIdA < transaction.accountIdB
+          ? accountAID
+          : accountBID;
+      coercedTransaction.account =
+        transaction.accountIdA < transaction.accountIdB
+          ? accountBID
+          : accountAID;
+      coercedTransaction.typename = TRANSACTION_AMM_SWAP_TYPENAME;
+      coercedTransaction.save();
+
+      tokenADailyData.tradedVolumeSwap = tokenADailyData.tradedVolumeSwap.plus(
+        transaction.fillSA
+      );
+      tokenAWeeklyData.tradedVolumeSwap = tokenAWeeklyData.tradedVolumeSwap.plus(
+        transaction.fillSA
+      );
+      tokenBDailyData.tradedVolumeSwap = tokenBDailyData.tradedVolumeSwap.plus(
+        transaction.fillSB
+      );
+      tokenBWeeklyData.tradedVolumeSwap = tokenBWeeklyData.tradedVolumeSwap.plus(
+        transaction.fillSB
+      );
+
+      tokenA.tradedVolumeSwap = tokenA.tradedVolumeSwap.plus(
+        transaction.fillSA
+      );
+      tokenB.tradedVolumeSwap = tokenB.tradedVolumeSwap.plus(
+        transaction.fillSB
+      );
+
+      pairDailyData.tradedVolumeToken0Swap = pairDailyData.tradedVolumeToken0Swap.plus(
+        token0Amount
+      );
+      pairDailyData.tradedVolumeToken1Swap = pairDailyData.tradedVolumeToken1Swap.plus(
+        token1Amount
+      );
+      pairWeeklyData.tradedVolumeToken0Swap = pairWeeklyData.tradedVolumeToken0Swap.plus(
+        token0Amount
+      );
+      pairWeeklyData.tradedVolumeToken1Swap = pairWeeklyData.tradedVolumeToken1Swap.plus(
+        token1Amount
+      );
+
+      pair.tradedVolumeToken0Swap = pair.tradedVolumeToken0Swap.plus(
+        token0Amount
+      );
+      pair.tradedVolumeToken1Swap = pair.tradedVolumeToken1Swap.plus(
+        token1Amount
+      );
+    } else {
+      proxy.orderbookTradeCount = proxy.orderbookTradeCount.plus(BIGINT_ONE);
+      block.orderbookTradeCount = block.orderbookTradeCount.plus(BIGINT_ONE);
+
+      transaction.accountA = accountAID;
+      transaction.accountB = accountBID;
+      transaction.typename = TRANSACTION_ORDERBOOK_TRADE_TYPENAME;
+      transaction.save();
+
+      tokenADailyData.tradedVolumeOrderbook = tokenADailyData.tradedVolumeOrderbook.plus(
+        transaction.fillSA
+      );
+      tokenAWeeklyData.tradedVolumeOrderbook = tokenAWeeklyData.tradedVolumeOrderbook.plus(
+        transaction.fillSA
+      );
+      tokenBDailyData.tradedVolumeOrderbook = tokenBDailyData.tradedVolumeOrderbook.plus(
+        transaction.fillSB
+      );
+      tokenBWeeklyData.tradedVolumeOrderbook = tokenBWeeklyData.tradedVolumeOrderbook.plus(
+        transaction.fillSB
+      );
+
+      tokenA.tradedVolumeOrderbook = tokenA.tradedVolumeOrderbook.plus(
+        transaction.fillSA
+      );
+      tokenB.tradedVolumeOrderbook = tokenB.tradedVolumeOrderbook.plus(
+        transaction.fillSB
+      );
+
+      pairDailyData.tradedVolumeToken0Orderbook = pairDailyData.tradedVolumeToken0Orderbook.plus(
+        token0Amount
+      );
+      pairDailyData.tradedVolumeToken1Orderbook = pairDailyData.tradedVolumeToken1Orderbook.plus(
+        token1Amount
+      );
+      pairWeeklyData.tradedVolumeToken0Orderbook = pairWeeklyData.tradedVolumeToken0Orderbook.plus(
+        token0Amount
+      );
+      pairWeeklyData.tradedVolumeToken1Orderbook = pairWeeklyData.tradedVolumeToken1Orderbook.plus(
+        token1Amount
+      );
+
+      pair.tradedVolumeToken0Orderbook = pair.tradedVolumeToken0Orderbook.plus(
+        token0Amount
+      );
+      pair.tradedVolumeToken1Orderbook = pair.tradedVolumeToken1Orderbook.plus(
+        token1Amount
+      );
+    }
+
+    getAndUpdateAccountTokenBalanceDailyData(
+      accountTokenBalanceAA,
+      block.timestamp
     );
-    pairDailyData.tradedVolumeToken1Orderbook = pairDailyData.tradedVolumeToken1Orderbook.plus(
-      token1Amount
+    getAndUpdateAccountTokenBalanceWeeklyData(
+      accountTokenBalanceAA,
+      block.timestamp
     );
-    pairWeeklyData.tradedVolumeToken0Orderbook = pairWeeklyData.tradedVolumeToken0Orderbook.plus(
-      token0Amount
+    getAndUpdateAccountTokenBalanceDailyData(
+      accountTokenBalanceAB,
+      block.timestamp
     );
-    pairWeeklyData.tradedVolumeToken1Orderbook = pairWeeklyData.tradedVolumeToken1Orderbook.plus(
-      token1Amount
+    getAndUpdateAccountTokenBalanceWeeklyData(
+      accountTokenBalanceAB,
+      block.timestamp
+    );
+    getAndUpdateAccountTokenBalanceDailyData(
+      accountTokenBalanceBB,
+      block.timestamp
+    );
+    getAndUpdateAccountTokenBalanceWeeklyData(
+      accountTokenBalanceBB,
+      block.timestamp
+    );
+    getAndUpdateAccountTokenBalanceDailyData(
+      accountTokenBalanceBA,
+      block.timestamp
+    );
+    getAndUpdateAccountTokenBalanceWeeklyData(
+      accountTokenBalanceBA,
+      block.timestamp
+    );
+    getAndUpdateAccountTokenBalanceDailyData(
+      operatorTokenBalanceA,
+      block.timestamp
+    );
+    getAndUpdateAccountTokenBalanceWeeklyData(
+      operatorTokenBalanceA,
+      block.timestamp
+    );
+    getAndUpdateAccountTokenBalanceDailyData(
+      operatorTokenBalanceB,
+      block.timestamp
+    );
+    getAndUpdateAccountTokenBalanceWeeklyData(
+      operatorTokenBalanceB,
+      block.timestamp
+    );
+    getAndUpdateAccountTokenBalanceDailyData(
+      protocolTokenBalanceA,
+      block.timestamp
+    );
+    getAndUpdateAccountTokenBalanceWeeklyData(
+      protocolTokenBalanceA,
+      block.timestamp
+    );
+    getAndUpdateAccountTokenBalanceDailyData(
+      protocolTokenBalanceB,
+      block.timestamp
+    );
+    getAndUpdateAccountTokenBalanceWeeklyData(
+      protocolTokenBalanceB,
+      block.timestamp
     );
 
-    pair.tradedVolumeToken0Orderbook = pair.tradedVolumeToken0Orderbook.plus(
-      token0Amount
-    );
-    pair.tradedVolumeToken1Orderbook = pair.tradedVolumeToken1Orderbook.plus(
-      token1Amount
-    );
+    pairDailyData.save();
+    pairWeeklyData.save();
+    tokenADailyData.save();
+    tokenAWeeklyData.save();
+    tokenBDailyData.save();
+    tokenBWeeklyData.save();
+    tokenA.save();
+    tokenB.save();
+    pair.save();
+    protocolAccount.save();
   }
-
-  getAndUpdateAccountTokenBalanceDailyData(
-    accountTokenBalanceAA,
-    block.timestamp
-  );
-  getAndUpdateAccountTokenBalanceWeeklyData(
-    accountTokenBalanceAA,
-    block.timestamp
-  );
-  getAndUpdateAccountTokenBalanceDailyData(
-    accountTokenBalanceAB,
-    block.timestamp
-  );
-  getAndUpdateAccountTokenBalanceWeeklyData(
-    accountTokenBalanceAB,
-    block.timestamp
-  );
-  getAndUpdateAccountTokenBalanceDailyData(
-    accountTokenBalanceBB,
-    block.timestamp
-  );
-  getAndUpdateAccountTokenBalanceWeeklyData(
-    accountTokenBalanceBB,
-    block.timestamp
-  );
-  getAndUpdateAccountTokenBalanceDailyData(
-    accountTokenBalanceBA,
-    block.timestamp
-  );
-  getAndUpdateAccountTokenBalanceWeeklyData(
-    accountTokenBalanceBA,
-    block.timestamp
-  );
-  getAndUpdateAccountTokenBalanceDailyData(
-    operatorTokenBalanceA,
-    block.timestamp
-  );
-  getAndUpdateAccountTokenBalanceWeeklyData(
-    operatorTokenBalanceA,
-    block.timestamp
-  );
-  getAndUpdateAccountTokenBalanceDailyData(
-    operatorTokenBalanceB,
-    block.timestamp
-  );
-  getAndUpdateAccountTokenBalanceWeeklyData(
-    operatorTokenBalanceB,
-    block.timestamp
-  );
-  getAndUpdateAccountTokenBalanceDailyData(
-    protocolTokenBalanceA,
-    block.timestamp
-  );
-  getAndUpdateAccountTokenBalanceWeeklyData(
-    protocolTokenBalanceA,
-    block.timestamp
-  );
-  getAndUpdateAccountTokenBalanceDailyData(
-    protocolTokenBalanceB,
-    block.timestamp
-  );
-  getAndUpdateAccountTokenBalanceWeeklyData(
-    protocolTokenBalanceB,
-    block.timestamp
-  );
-
-  pairDailyData.save();
-  pairWeeklyData.save();
-  tokenADailyData.save();
-  tokenAWeeklyData.save();
-  tokenBDailyData.save();
-  tokenBWeeklyData.save();
-  tokenA.save();
-  tokenB.save();
-  pair.save();
-  protocolAccount.save();
 }
 
 function calculateFee(fillB: BigInt, feeBips: BigInt): BigInt {
