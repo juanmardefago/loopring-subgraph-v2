@@ -239,10 +239,13 @@ export function processNFTMint(
   }
 
   offset = 68;
+  log.warning("Before extracting extra data. Block L2: {}, tx hash: {}, L2 tx ID", [block.id, block.txHash, transaction.id])
   transaction.extraData = extractData(data, offset, 136);
   // Read the following NFT data tx
+  log.warning("Before first data segment. Block L2: {}, tx hash: {}, L2 tx ID", [block.id, block.txHash, transaction.id])
   let firstDataSegment = extractData(data, offset, 68);
   if (firstDataSegment.length == 68) {
+    log.warning("First data segment. Block L2: {}, tx hash: {}, L2 tx ID", [block.id, block.txHash, transaction.id])
     let firstDataSegmentOffset = 0;
 
     // Get the tx type of the extra data to check that it's an NFTData tx
@@ -260,6 +263,7 @@ export function processNFTMint(
       );
     }
 
+    log.warning("Before NFTID and Creator fee bips. Block L2: {}, tx hash: {}, L2 tx ID", [block.id, block.txHash, transaction.id])
     transaction.nftID =
       "0x" + extractData(firstDataSegment, firstDataSegmentOffset, 32);
     firstDataSegmentOffset += 32;
@@ -270,8 +274,10 @@ export function processNFTMint(
     );
 
     offset = 136;
+    log.warning("Before second data segment. Block L2: {}, tx hash: {}, L2 tx ID", [block.id, block.txHash, transaction.id])
     let secondDataSegment = extractData(data, offset, 68);
     if (secondDataSegment.length == 68) {
+      log.warning("Second data segment. Block L2: {}, tx hash: {}, L2 tx ID", [block.id, block.txHash, transaction.id])
       let secondDataSegmentOffset = 0;
 
       // Get the tx type of the extra data to check that it's an NFTData tx
@@ -289,6 +295,7 @@ export function processNFTMint(
         );
       }
 
+      log.warning("Before NFT data tx type. Block L2: {}, tx hash: {}, L2 tx ID", [block.id, block.txHash, transaction.id])
       let nftDataTxType = extractInt(data, offset, 1);
       secondDataSegmentOffset += 1 + 4 + 2 + 32 + 1; // Skips all other NFTData fields that we don't care about
 
@@ -299,10 +306,12 @@ export function processNFTMint(
         );
       }
 
+      log.warning("Before NFT type. Block L2: {}, tx hash: {}, L2 tx ID", [block.id, block.txHash, transaction.id])
       transaction.nftType = extractInt(data, offset, 1);
       offset += 1;
       transaction.tokenAddress = extractData(data, offset, 20);
       offset += 20;
+      log.warning("All extra data processed. Block L2: {}, tx hash: {}, L2 tx ID", [block.id, block.txHash, transaction.id])
     }
   }
 

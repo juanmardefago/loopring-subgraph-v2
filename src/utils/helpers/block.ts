@@ -103,11 +103,11 @@ export function processBlockData(block: Block, proxy: Proxy): Block {
       processSignatureVerification(txId, txData, block, proxy)
     } else if(txType == TRANSACTION_NFT_MINT) {
       if (i + 1 < block.blockSize) {
-          txData.concat(
+          txData = txData.concat(
             getTxData(data, offset, i + 1, block.blockSize)
           );
           if (i + 2 < block.blockSize) {
-            txData.concat(
+            txData = txData.concat(
               getTxData(data, offset, i + 2, block.blockSize)
             );
           }
