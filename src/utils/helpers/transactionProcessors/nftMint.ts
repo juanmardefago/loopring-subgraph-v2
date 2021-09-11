@@ -324,5 +324,10 @@ export function processNFTMint(
   );
   receiverAccountNFTSlot.save();
 
+  transaction.nft = nft.id;
+  transaction.receiverSlot = receiverAccountNFTSlot.id;
+  transaction.minter = intToString(transaction.minterAccountID)
+  transaction.receiver = intToString(transaction.toAccountID)
+
   transaction.save();
 }

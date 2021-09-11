@@ -1143,14 +1143,14 @@ type TradeNFT implements Transaction @entity {
   fillBB: BigInt!
 
   "[RAW L2 DATA] Fee paid by Account A with Token B"
-  feeA: BigInt!
+  feeSeller: BigInt!
   "[RAW L2 DATA] Protocol fees paid by Account A"
-  protocolFeeA: BigInt!
+  protocolFeeSeller: BigInt!
 
   "[RAW L2 DATA] Fee paid by Account B with token A"
-  feeB: BigInt!
+  feeBuyer: BigInt!
   "[RAW L2 DATA] Protocol fees paid by Account B"
-  protocolFeeB: BigInt!
+  protocolFeeBuyer: BigInt!
 
   tokenBalances: [AccountTokenBalance!]
 
@@ -1243,16 +1243,6 @@ type SwapNFT implements Transaction @entity {
   fillBA: BigInt!
   "[RAW L2 DATA] Amount of token A bought by Account B"
   fillBB: BigInt!
-
-  "[RAW L2 DATA] Fee paid by Account A with Token B"
-  feeA: BigInt!
-  "[RAW L2 DATA] Protocol fees paid by Account A"
-  protocolFeeA: BigInt!
-
-  "[RAW L2 DATA] Fee paid by Account B with token A"
-  feeB: BigInt!
-  "[RAW L2 DATA] Protocol fees paid by Account B"
-  protocolFeeB: BigInt!
 
   tokenBalances: [AccountTokenBalance!]
 
@@ -1373,6 +1363,14 @@ type MintNFT implements Transaction @entity {
 
   block: Block!
 
+  receiverSlot: AccountNFTSlot!
+
+  minter: Account!
+
+  receiver: Account!
+
+  nft: NonFungibleToken!
+
   # Raw L2 data extracted from the data string
   type: Int!
   minterAccountID: Int!
@@ -1415,8 +1413,8 @@ type DataNFT implements Transaction @entity {
   nftID: String!
   creatorFeeBips: Int!
   nftType: Int!
-  minter: String!
-  tokenAddress: String!
+  minter: String
+  tokenAddress: String
 
   tokenBalances: [AccountTokenBalance!]
 

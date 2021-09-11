@@ -442,6 +442,7 @@ export function processSpotTrade(
     // Check whether it's a swap or a trade
     if (isNFT(tokenIDAS) && isNFT(tokenIDBS)) {
       let coercedTransaction = transaction as SwapNFT;
+      coercedTransaction.typename = TRANSACTION_SWAP_NFT_TYPENAME;
       proxy.swapNFTCount = proxy.swapNFTCount.plus(BIGINT_ONE);
       block.swapNFTCount = block.swapNFTCount.plus(BIGINT_ONE);
 
@@ -470,7 +471,9 @@ export function processSpotTrade(
       slotABuyer.balance = slotABuyer.balance.plus(coercedTransaction.fillSB);
       slotABuyer.nft = slotBSeller.nft;
 
-      slotBSeller.balance = slotBSeller.balance.minus(coercedTransaction.fillSB);
+      slotBSeller.balance = slotBSeller.balance.minus(
+        coercedTransaction.fillSB
+      );
       if (slotBSeller.balance <= BIGINT_ZERO) {
         slotBSeller.nft = null;
       }
@@ -479,7 +482,9 @@ export function processSpotTrade(
       slotBBuyer.balance = slotBBuyer.balance.plus(coercedTransaction.fillSA);
       slotBBuyer.nft = slotASeller.nft;
 
-      slotASeller.balance = slotASeller.balance.minus(coercedTransaction.fillSA);
+      slotASeller.balance = slotASeller.balance.minus(
+        coercedTransaction.fillSA
+      );
       if (slotASeller.balance <= BIGINT_ZERO) {
         slotASeller.nft = null;
       }
@@ -492,15 +497,38 @@ export function processSpotTrade(
       coercedTransaction.slotASeller = slotASeller.id;
       coercedTransaction.slotBSeller = slotBSeller.id;
 
-      // TO-DO fees?
+      coercedTransaction.accountA = accountAID;
+      coercedTransaction.accountB = accountBID;
 
+      coercedTransaction.tokenBalances = tokenBalances;
+      coercedTransaction.accounts = accounts;
+
+      coercedTransaction.save();
+      // There's no fees on swap nfts
     } else {
       let coercedTransaction = transaction as TradeNFT;
+      coercedTransaction.typename = TRANSACTION_TRADE_NFT_TYPENAME;
       proxy.tradeNFTCount = proxy.tradeNFTCount.plus(BIGINT_ONE);
       block.tradeNFTCount = block.tradeNFTCount.plus(BIGINT_ONE);
 
-      let sellerId = isNFT(tokenIDAS) ? coercedTransaction.accountIdA : coercedTransaction.accountIdB;
-      let buyerId = isNFT(tokenIDAS) ? coercedTransaction.accountIdB : coercedTransaction.accountIdA;
+      let sellerId = isNFT(tokenIDAS)
+        ? coercedTransaction.accountIdA
+        : coercedTransaction.accountIdB;
+      let buyerId = isNFT(tokenIDAS)
+        ? coercedTransaction.accountIdB
+        : coercedTransaction.accountIdA;
+      let sellerFeeBips = isNFT(tokenIDAS)
+        ? coercedTransaction.feeBipsA
+        : coercedTransaction.feeBipsB;
+      let sellerProtocolFeeBips = isNFT(tokenIDAS)
+        ? block.protocolFeeTakerBips
+        : block.protocolFeeMakerBips;
+      let buyerFeeBips = isNFT(tokenIDAS)
+        ? coercedTransaction.feeBipsB
+        : coercedTransaction.feeBipsA;
+      let buyerProtocolFeeBips = isNFT(tokenIDAS)
+        ? block.protocolFeeMakerBips
+        : block.protocolFeeTakerBips;
       let slotIdSeller = isNFT(tokenIDAS) ? tokenIDAS : tokenIDBS;
       let slotIdBuyer = isNFT(tokenIDAS) ? tokenIDBB : tokenIDAB;
       let tokenId = isNFT(tokenIDAS) ? tokenIDBS : tokenIDAS;
@@ -541,10 +569,76 @@ export function processSpotTrade(
       coercedTransaction.slotSeller = slotSeller.id;
 
       // ERC20 payment of the NFT trade
+      // TO-DO fees and token balance updates
       let token = getToken(intToString(tokenId)) as Token;
       coercedTransaction.token = token.id;
+      coercedTransaction.realizedNFTPrice = amountToken;
 
-      // TO-DO fees and token balance updates
+      coercedTransaction.feeSeller = calculateFee(amountToken, sellerFeeBips);
+      coercedTransaction.protocolFeeSeller = calculateProtocolFee(
+        amountToken,
+        sellerProtocolFeeBips
+      );
+
+      coercedTransaction.feeBuyer = calculateFee(amountToken, buyerFeeBips);
+      coercedTransaction.protocolFeeBuyer = calculateProtocolFee(
+        amountToken,
+        buyerProtocolFeeBips
+      );
+
+      let accountTokenBalanceSeller = getOrCreateAccountTokenBalance(
+        intToString(sellerId),
+        token.id
+      );
+      accountTokenBalanceSeller.balance = accountTokenBalanceSeller.balance
+        .plus(amountToken)
+        .minus(coercedTransaction.feeSeller);
+      accountTokenBalanceSeller.save();
+      tokenBalances.push(accountTokenBalanceSeller.id);
+
+      let accountTokenBalanceBuyer = getOrCreateAccountTokenBalance(
+        intToString(buyerId),
+        token.id
+      );
+      accountTokenBalanceBuyer.balance = accountTokenBalanceBuyer.balance
+        .minus(amountToken)
+        .minus(coercedTransaction.feeBuyer);
+      accountTokenBalanceBuyer.save();
+      tokenBalances.push(accountTokenBalanceBuyer.id);
+
+      // Should also update operator account balance
+      let operatorId = intToString(block.operatorAccountID);
+
+      let operatorTokenBalance = getOrCreateAccountTokenBalance(
+        operatorId,
+        token.id
+      );
+      operatorTokenBalance.balance = operatorTokenBalance.balance
+        .plus(coercedTransaction.feeBuyer)
+        .plus(coercedTransaction.feeSeller)
+        .minus(coercedTransaction.protocolFeeBuyer)
+        .minus(coercedTransaction.protocolFeeSeller);
+      operatorTokenBalance.save();
+      tokenBalances.push(operatorTokenBalance.id);
+
+      // update protocol balance
+      let protocolAccount = getProtocolAccount(coercedTransaction.id);
+
+      let protocolTokenBalance = getOrCreateAccountTokenBalance(
+        protocolAccount.id,
+        token.id
+      );
+      protocolTokenBalance.balance = protocolTokenBalance.balance
+        .plus(coercedTransaction.protocolFeeSeller)
+        .plus(coercedTransaction.protocolFeeBuyer);
+      protocolTokenBalance.save();
+      tokenBalances.push(protocolTokenBalance.id);
+
+      coercedTransaction.tokenBalances = tokenBalances
+      coercedTransaction.accounts = accounts
+
+      coercedTransaction.save()
+      protocolAccount.save()
     }
   } else {
     // ERC20 trade/swap
