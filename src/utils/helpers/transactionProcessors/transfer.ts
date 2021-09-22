@@ -203,7 +203,7 @@ export function processTransfer(
   let tokenBalances = new Array<String>();
 
   if (isNFT(transaction.tokenID)) {
-    let coercedTransaction = transaction as TransferNFT;
+    let coercedTransaction = changetype<TransferNFT>(transaction);
     // NFT Transfer
     // Fee token balance calculation
     let fromAccountTokenFeeBalance = getOrCreateAccountTokenBalance(
@@ -403,7 +403,7 @@ export function processTransfer(
       proxy.addCount = proxy.addCount.plus(BIGINT_ONE);
       block.addCount = block.addCount.plus(BIGINT_ONE);
 
-      let coercedTransaction = transaction as Add;
+      let coercedTransaction = changetype<Add>(transaction);
       coercedTransaction.account = fromAccountId;
       coercedTransaction.pool = toAccountId;
       coercedTransaction.typename = TRANSACTION_ADD_TYPENAME;
@@ -412,7 +412,7 @@ export function processTransfer(
       proxy.removeCount = proxy.removeCount.plus(BIGINT_ONE);
       block.removeCount = block.removeCount.plus(BIGINT_ONE);
 
-      let coercedTransaction = transaction as Remove;
+      let coercedTransaction = changetype<Remove>(transaction);
       coercedTransaction.account = toAccountId;
       coercedTransaction.pool = fromAccountId;
       coercedTransaction.typename = TRANSACTION_REMOVE_TYPENAME;

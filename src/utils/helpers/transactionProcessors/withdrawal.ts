@@ -194,7 +194,7 @@ export function processWithdrawal(
     proxy.withdrawalNFTCount = proxy.withdrawalNFTCount + BIGINT_ONE;
     block.withdrawalNFTCount = block.withdrawalNFTCount + BIGINT_ONE;
 
-    let coercedTransaction = transaction as WithdrawalNFT;
+    let coercedTransaction = changetype<WithdrawalNFT>(transaction);
     // NFT withdrawal
     // Pay fee
     let accountTokenFeeBalance = getOrCreateAccountTokenBalance(

@@ -441,7 +441,7 @@ export function processSpotTrade(
 
     // Check whether it's a swap or a trade
     if (isNFT(tokenIDAS) && isNFT(tokenIDBS)) {
-      let coercedTransaction = transaction as SwapNFT;
+      let coercedTransaction = changetype<SwapNFT>(transaction);
       coercedTransaction.typename = TRANSACTION_SWAP_NFT_TYPENAME;
       proxy.swapNFTCount = proxy.swapNFTCount.plus(BIGINT_ONE);
       block.swapNFTCount = block.swapNFTCount.plus(BIGINT_ONE);
@@ -506,7 +506,7 @@ export function processSpotTrade(
       coercedTransaction.save();
       // There's no fees on swap nfts
     } else {
-      let coercedTransaction = transaction as TradeNFT;
+      let coercedTransaction = changetype<TradeNFT>(transaction);
       coercedTransaction.typename = TRANSACTION_TRADE_NFT_TYPENAME;
       proxy.tradeNFTCount = proxy.tradeNFTCount.plus(BIGINT_ONE);
       block.tradeNFTCount = block.tradeNFTCount.plus(BIGINT_ONE);
@@ -634,11 +634,11 @@ export function processSpotTrade(
       protocolTokenBalance.save();
       tokenBalances.push(protocolTokenBalance.id);
 
-      coercedTransaction.tokenBalances = tokenBalances
-      coercedTransaction.accounts = accounts
+      coercedTransaction.tokenBalances = tokenBalances;
+      coercedTransaction.accounts = accounts;
 
-      coercedTransaction.save()
-      protocolAccount.save()
+      coercedTransaction.save();
+      protocolAccount.save();
     }
   } else {
     // ERC20 trade/swap
@@ -838,7 +838,7 @@ export function processSpotTrade(
       proxy.swapCount = proxy.swapCount.plus(BIGINT_ONE);
       block.swapCount = block.swapCount.plus(BIGINT_ONE);
 
-      let coercedTransaction = transaction as Swap;
+      let coercedTransaction = changetype<Swap>(transaction);
       coercedTransaction.pool =
         transaction.accountIdA < transaction.accountIdB
           ? accountAID

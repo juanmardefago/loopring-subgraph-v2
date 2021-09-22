@@ -163,8 +163,8 @@ type Block @entity {
   "Transaction hash for the L1 Transaction where the L2 Block was submitted"
   txHash: String!
 
-  "Amount of gas used. Known issue -> Currently equals the gasLimit and not the actual gas used."
-  gasUsed: BigInt!
+  "Amount of gas limit used"
+  gasLimit: BigInt!
 
   "Gas price for the L1 transaction"
   gasPrice: BigInt!
@@ -421,7 +421,7 @@ type NonFungibleToken @entity {
 
   nftType: Int!
 
-  token: String!
+  token: String
 
   creatorFeeBips: Int!
 
@@ -1381,7 +1381,7 @@ type MintNFT implements Transaction @entity {
   storageID: Int
   nftType: Int
   tokenAccountID: Int
-  nftID: String
+  nftID: String!
   creatorFeeBips: Int
   toAccountID: Int
   to: String

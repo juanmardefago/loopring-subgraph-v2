@@ -232,6 +232,10 @@ export function processNFTMint(
 
     transaction.toAccountID = transaction.minterAccountID;
   } else {
+    log.warning(
+      "TX TYPE not 0, processing toAccountID and to fields. Block L2: {}, tx hash: {}, L2 tx ID",
+      [block.id, block.txHash, transaction.id]
+    );
     transaction.toAccountID = extractInt(data, offset, 4);
     offset += 4;
     transaction.to = extractData(data, offset, 20);
@@ -239,81 +243,12 @@ export function processNFTMint(
   }
 
   offset = 68;
-  log.warning("Before extracting extra data. Block L2: {}, tx hash: {}, L2 tx ID", [block.id, block.txHash, transaction.id])
+  log.warning(
+    "Before extracting extra data. Block L2: {}, tx hash: {}, L2 tx ID",
+    [block.id, block.txHash, transaction.id]
+  );
   transaction.extraData = extractData(data, offset, 136);
-  // Read the following NFT data tx
-  log.warning("Before first data segment. Block L2: {}, tx hash: {}, L2 tx ID", [block.id, block.txHash, transaction.id])
-  let firstDataSegment = extractData(data, offset, 68);
-  if (firstDataSegment.length == 68) {
-    log.warning("First data segment. Block L2: {}, tx hash: {}, L2 tx ID", [block.id, block.txHash, transaction.id])
-    let firstDataSegmentOffset = 0;
-
-    // Get the tx type of the extra data to check that it's an NFTData tx
-    let txTypeFirstSegment = extractData(
-      firstDataSegment,
-      firstDataSegmentOffset,
-      1
-    );
-    firstDataSegmentOffset += 8; // Skips all other NFTData fields that we don't care about
-
-    if (txTypeFirstSegment != TRANSACTION_NFT_DATA) {
-      log.warning(
-        "First segment of data for mint transaction with ID: {} isn't of type NFTData. Actual type: {}, expected type: {}",
-        [transaction.id, txTypeFirstSegment, TRANSACTION_NFT_DATA]
-      );
-    }
-
-    log.warning("Before NFTID and Creator fee bips. Block L2: {}, tx hash: {}, L2 tx ID", [block.id, block.txHash, transaction.id])
-    transaction.nftID =
-      "0x" + extractData(firstDataSegment, firstDataSegmentOffset, 32);
-    firstDataSegmentOffset += 32;
-    transaction.creatorFeeBips = extractInt(
-      firstDataSegment,
-      firstDataSegmentOffset,
-      1
-    );
-
-    offset = 136;
-    log.warning("Before second data segment. Block L2: {}, tx hash: {}, L2 tx ID", [block.id, block.txHash, transaction.id])
-    let secondDataSegment = extractData(data, offset, 68);
-    if (secondDataSegment.length == 68) {
-      log.warning("Second data segment. Block L2: {}, tx hash: {}, L2 tx ID", [block.id, block.txHash, transaction.id])
-      let secondDataSegmentOffset = 0;
-
-      // Get the tx type of the extra data to check that it's an NFTData tx
-      let txTypeSecondSegment = extractData(
-        secondDataSegment,
-        secondDataSegmentOffset,
-        1
-      );
-      secondDataSegmentOffset += 1;
-
-      if (txTypeSecondSegment != TRANSACTION_NFT_DATA) {
-        log.warning(
-          "Second segment of data for mint transaction with ID: {} isn't of type NFTData. Actual type: {}, expected type: {}",
-          [transaction.id, txTypeSecondSegment, TRANSACTION_NFT_DATA]
-        );
-      }
-
-      log.warning("Before NFT data tx type. Block L2: {}, tx hash: {}, L2 tx ID", [block.id, block.txHash, transaction.id])
-      let nftDataTxType = extractInt(data, offset, 1);
-      secondDataSegmentOffset += 1 + 4 + 2 + 32 + 1; // Skips all other NFTData fields that we don't care about
-
-      if (nftDataTxType != 1) {
-        log.warning(
-          "NFTDATA tx type for the second segment is unexpected.",
-          []
-        );
-      }
-
-      log.warning("Before NFT type. Block L2: {}, tx hash: {}, L2 tx ID", [block.id, block.txHash, transaction.id])
-      transaction.nftType = extractInt(data, offset, 1);
-      offset += 1;
-      transaction.tokenAddress = extractData(data, offset, 20);
-      offset += 20;
-      log.warning("All extra data processed. Block L2: {}, tx hash: {}, L2 tx ID", [block.id, block.txHash, transaction.id])
-    }
-  }
+  transaction = processNFTData(transaction, block, data, offset);
 
   let nft = getOrCreateNFT(transaction.nftID, transaction.id, proxy);
   nft.minter = intToString(transaction.minterAccountID);
@@ -335,8 +270,117 @@ export function processNFTMint(
 
   transaction.nft = nft.id;
   transaction.receiverSlot = receiverAccountNFTSlot.id;
-  transaction.minter = intToString(transaction.minterAccountID)
-  transaction.receiver = intToString(transaction.toAccountID)
+  transaction.minter = intToString(transaction.minterAccountID);
+  transaction.receiver = intToString(transaction.toAccountID);
 
   transaction.save();
+}
+
+function processNFTData(
+  transaction: MintNFT,
+  block: Block,
+  data: String,
+  offset: i32
+): MintNFT {
+  // Read the following NFT data tx
+  log.warning(
+    "Before first data segment. Block L2: {}, tx hash: {}, L2 tx ID",
+    [block.id, block.txHash, transaction.id]
+  );
+  let firstDataSegment = extractData(data, offset, 68);
+  if (firstDataSegment.length == 68) {
+    log.warning("First data segment. Block L2: {}, tx hash: {}, L2 tx ID", [
+      block.id,
+      block.txHash,
+      transaction.id
+    ]);
+    let firstDataSegmentOffset = 0;
+
+    // Get the tx type of the extra data to check that it's an NFTData tx
+    let txTypeFirstSegment = extractData(
+      firstDataSegment,
+      firstDataSegmentOffset,
+      1
+    );
+    firstDataSegmentOffset += 8; // Skips all other NFTData fields that we don't care about
+
+    if (txTypeFirstSegment != TRANSACTION_NFT_DATA) {
+      log.warning(
+        "First segment of data for mint transaction with ID: {} isn't of type NFTData. Actual type: {}, expected type: {}",
+        [transaction.id, txTypeFirstSegment, TRANSACTION_NFT_DATA]
+      );
+    }
+
+    log.warning(
+      "Before NFTID and Creator fee bips. Block L2: {}, tx hash: {}, L2 tx ID",
+      [block.id, block.txHash, transaction.id]
+    );
+    transaction.nftID =
+      "0x" + extractData(firstDataSegment, firstDataSegmentOffset, 32);
+    firstDataSegmentOffset += 32;
+    transaction.creatorFeeBips = extractInt(
+      firstDataSegment,
+      firstDataSegmentOffset,
+      1
+    );
+
+    offset = 136;
+    log.warning(
+      "Before second data segment. Block L2: {}, tx hash: {}, L2 tx ID",
+      [block.id, block.txHash, transaction.id]
+    );
+    let secondDataSegment = extractData(data, offset, 68);
+    if (secondDataSegment.length == 68) {
+      log.warning("Second data segment. Block L2: {}, tx hash: {}, L2 tx ID", [
+        block.id,
+        block.txHash,
+        transaction.id
+      ]);
+      let secondDataSegmentOffset = 0;
+
+      // Get the tx type of the extra data to check that it's an NFTData tx
+      let txTypeSecondSegment = extractData(
+        secondDataSegment,
+        secondDataSegmentOffset,
+        1
+      );
+      secondDataSegmentOffset += 1;
+
+      if (txTypeSecondSegment != TRANSACTION_NFT_DATA) {
+        log.warning(
+          "Second segment of data for mint transaction with ID: {} isn't of type NFTData. Actual type: {}, expected type: {}",
+          [transaction.id, txTypeSecondSegment, TRANSACTION_NFT_DATA]
+        );
+      }
+
+      log.warning(
+        "Before NFT data tx type. Block L2: {}, tx hash: {}, L2 tx ID",
+        [block.id, block.txHash, transaction.id]
+      );
+      let nftDataTxType = extractInt(data, offset, 1);
+      secondDataSegmentOffset += 1 + 4 + 2 + 32 + 1; // Skips all other NFTData fields that we don't care about
+
+      if (nftDataTxType != 1) {
+        log.warning(
+          "NFTDATA tx type for the second segment is unexpected.",
+          []
+        );
+      }
+
+      log.warning("Before NFT type. Block L2: {}, tx hash: {}, L2 tx ID", [
+        block.id,
+        block.txHash,
+        transaction.id
+      ]);
+      transaction.nftType = extractInt(data, offset, 1);
+      offset += 1;
+      transaction.tokenAddress = extractData(data, offset, 20);
+      offset += 20;
+      log.warning(
+        "All extra data processed. Block L2: {}, tx hash: {}, L2 tx ID",
+        [block.id, block.txHash, transaction.id]
+      );
+    }
+  }
+  return transaction as MintNFT;
 }

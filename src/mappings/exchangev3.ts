@@ -22,7 +22,7 @@ export function handleTokenRegistered(event: TokenRegistered): void {
   let token = getOrCreateToken(tokenId, event.params.token);
   let proxy = getProxy();
 
-  token.exchange = proxy.currentImplementation;
+  token.exchange = proxy.currentImplementation as String;
   proxy.tokenCount = proxy.tokenCount.plus(BIGINT_ONE);
 
   token.save();
@@ -31,22 +31,22 @@ export function handleTokenRegistered(event: TokenRegistered): void {
 
 export function handleSubmitBlocksV1(call: SubmitBlocksCall): void {
   handleSubmitBlocks(
-    call as ethereum.Call,
-    call.inputs.blocks as Array<SubmitBlocksCallBlocksStruct>
+    changetype<ethereum.Call>(call),
+    changetype<Array<SubmitBlocksCallBlocksStruct>>(call.inputs.blocks)
   );
 }
 
 export function handleSubmitBlocksV2(call: SubmitBlocks1Call): void {
   handleSubmitBlocks(
-    call as ethereum.Call,
-    call.inputs.blocks as Array<SubmitBlocksCallBlocksStruct>
+    changetype<ethereum.Call>(call),
+    changetype<Array<SubmitBlocksCallBlocksStruct>>(call.inputs.blocks)
   );
 }
 
 export function handleSubmitBlocksV3(call: SubmitBlocks2Call): void {
   handleSubmitBlocks(
-    call as ethereum.Call,
-    call.inputs.blocks as Array<SubmitBlocksCallBlocksStruct>
+    changetype<ethereum.Call>(call),
+    changetype<Array<SubmitBlocksCallBlocksStruct>>(call.inputs.blocks)
   );
 }
 
@@ -63,7 +63,7 @@ function handleSubmitBlocks(
 
     // metadata
     block.txHash = call.transaction.hash.toHexString();
-    block.gasUsed = call.transaction.gasUsed;
+    block.gasLimit = call.transaction.gasLimit;
     block.gasPrice = call.transaction.gasPrice;
     block.height = call.block.number;
     block.timestamp = call.block.timestamp;
