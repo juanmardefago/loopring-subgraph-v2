@@ -288,7 +288,7 @@ function processNFTData(
     [block.id, block.txHash, transaction.id]
   );
   let firstDataSegment = extractData(data, offset, 68);
-  if (firstDataSegment.length == 68) {
+  if (firstDataSegment.length == 136) {
     log.warning("First data segment. Block L2: {}, tx hash: {}, L2 tx ID", [
       block.id,
       block.txHash,
@@ -330,7 +330,7 @@ function processNFTData(
       [block.id, block.txHash, transaction.id]
     );
     let secondDataSegment = extractData(data, offset, 68);
-    if (secondDataSegment.length == 68) {
+    if (secondDataSegment.length == 136) {
       log.warning("Second data segment. Block L2: {}, tx hash: {}, L2 tx ID", [
         block.id,
         block.txHash,
