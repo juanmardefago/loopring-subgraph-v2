@@ -21,7 +21,9 @@ import {
   getOrCreateAccountTokenBalance,
   compoundIdToSortableDecimal,
   getOrCreateNFT,
-  getOrCreateAccountNFTSlot
+  getOrCreateAccountNFTSlot,
+  getAndUpdateAccountTokenBalanceDailyData,
+  getAndUpdateAccountTokenBalanceWeeklyData
 } from "../index";
 import {
   TRANSACTION_NFT_MINT_TYPENAME,
@@ -232,23 +234,23 @@ export function processNFTMint(
 
     transaction.toAccountID = transaction.minterAccountID;
   } else {
-    log.warning(
-      "TX TYPE not 0, processing toAccountID and to fields. Block L2: {}, tx hash: {}, L2 tx ID",
-      [block.id, block.txHash, transaction.id]
-    );
     transaction.toAccountID = extractInt(data, offset, 4);
     offset += 4;
-    transaction.to = extractData(data, offset, 20);
+    transaction.to = "0x" + extractData(data, offset, 20);
     offset += 20;
   }
 
+  let accounts = new Array<String>();
+  let tokenBalances = new Array<String>();
+
+  transaction.feeToken = intToString(transaction.feeTokenID);
+
   offset = 68;
-  log.warning(
-    "Before extracting extra data. Block L2: {}, tx hash: {}, L2 tx ID",
-    [block.id, block.txHash, transaction.id]
-  );
   transaction.extraData = extractData(data, offset, 136);
   transaction = processNFTData(transaction, block, data, offset);
+
+  accounts.push(intToString(transaction.toAccountID));
+  accounts.push(intToString(transaction.minterAccountID));
 
   let nft = getOrCreateNFT(transaction.nftID, transaction.id, proxy);
   nft.minter = intToString(transaction.minterAccountID);
@@ -273,6 +275,50 @@ export function processNFTMint(
   transaction.minter = intToString(transaction.minterAccountID);
   transaction.receiver = intToString(transaction.toAccountID);
 
+  // Minter fee payment
+  let minterTokenFeeBalance = getOrCreateAccountTokenBalance(
+    intToString(transaction.minterAccountID),
+    transaction.feeToken
+  );
+  minterTokenFeeBalance.balance = minterTokenFeeBalance.balance.minus(
+    transaction.fee
+  );
+  tokenBalances.push(minterTokenFeeBalance.id);
+
+  minterTokenFeeBalance.save();
+
+  // Operator fee payment
+  let operatorTokenFeeBalance = getOrCreateAccountTokenBalance(
+    intToString(block.operatorAccountID),
+    transaction.feeToken
+  );
+  operatorTokenFeeBalance.balance = operatorTokenFeeBalance.balance.plus(
+    transaction.fee
+  );
+  tokenBalances.push(operatorTokenFeeBalance.id);
+
+  operatorTokenFeeBalance.save();
+
+  transaction.tokenBalances = tokenBalances;
+  transaction.accounts = accounts;
+
+  getAndUpdateAccountTokenBalanceDailyData(
+    minterTokenFeeBalance,
+    block.timestamp
+  );
+  getAndUpdateAccountTokenBalanceWeeklyData(
+    minterTokenFeeBalance,
+    block.timestamp
+  );
+  getAndUpdateAccountTokenBalanceDailyData(
+    operatorTokenFeeBalance,
+    block.timestamp
+  );
+  getAndUpdateAccountTokenBalanceWeeklyData(
+    operatorTokenFeeBalance,
+    block.timestamp
+  );
+
   transaction.save();
 }
 
@@ -283,17 +329,8 @@ function processNFTData(
   offset: i32
 ): MintNFT {
   // Read the following NFT data tx
-  log.warning(
-    "Before first data segment. Block L2: {}, tx hash: {}, L2 tx ID",
-    [block.id, block.txHash, transaction.id]
-  );
   let firstDataSegment = extractData(data, offset, 68);
   if (firstDataSegment.length == 136) {
-    log.warning("First data segment. Block L2: {}, tx hash: {}, L2 tx ID", [
-      block.id,
-      block.txHash,
-      transaction.id
-    ]);
     let firstDataSegmentOffset = 0;
 
     // Get the tx type of the extra data to check that it's an NFTData tx
@@ -311,10 +348,6 @@ function processNFTData(
       );
     }
 
-    log.warning(
-      "Before NFTID and Creator fee bips. Block L2: {}, tx hash: {}, L2 tx ID",
-      [block.id, block.txHash, transaction.id]
-    );
     transaction.nftID =
       "0x" + extractData(firstDataSegment, firstDataSegmentOffset, 32);
     firstDataSegmentOffset += 32;
@@ -325,17 +358,8 @@ function processNFTData(
     );
 
     offset = 136;
-    log.warning(
-      "Before second data segment. Block L2: {}, tx hash: {}, L2 tx ID",
-      [block.id, block.txHash, transaction.id]
-    );
     let secondDataSegment = extractData(data, offset, 68);
     if (secondDataSegment.length == 136) {
-      log.warning("Second data segment. Block L2: {}, tx hash: {}, L2 tx ID", [
-        block.id,
-        block.txHash,
-        transaction.id
-      ]);
       let secondDataSegmentOffset = 0;
 
       // Get the tx type of the extra data to check that it's an NFTData tx
@@ -353,10 +377,6 @@ function processNFTData(
         );
       }
 
-      log.warning(
-        "Before NFT data tx type. Block L2: {}, tx hash: {}, L2 tx ID",
-        [block.id, block.txHash, transaction.id]
-      );
       let nftDataTxType = extractInt(data, offset, 1);
       secondDataSegmentOffset += 1 + 4 + 2 + 32 + 1; // Skips all other NFTData fields that we don't care about
 
@@ -367,19 +387,10 @@ function processNFTData(
         );
       }
 
-      log.warning("Before NFT type. Block L2: {}, tx hash: {}, L2 tx ID", [
-        block.id,
-        block.txHash,
-        transaction.id
-      ]);
       transaction.nftType = extractInt(data, offset, 1);
       offset += 1;
-      transaction.tokenAddress = extractData(data, offset, 20);
+      transaction.tokenAddress = "0x" + extractData(data, offset, 20);
       offset += 20;
-      log.warning(
-        "All extra data processed. Block L2: {}, tx hash: {}, L2 tx ID",
-        [block.id, block.txHash, transaction.id]
-      );
     }
   }
   return transaction as MintNFT;

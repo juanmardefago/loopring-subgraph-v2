@@ -1371,6 +1371,9 @@ type MintNFT implements Transaction @entity {
 
   nft: NonFungibleToken!
 
+  "Token entity with information about the token used to pay the operator fees"
+  feeToken: Token!
+
   # Raw L2 data extracted from the data string
   type: Int!
   minterAccountID: Int!
