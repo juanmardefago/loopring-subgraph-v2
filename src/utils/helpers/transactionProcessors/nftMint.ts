@@ -247,7 +247,9 @@ export function processNFTMint(
 
   offset = 68;
   transaction.extraData = extractData(data, offset, 136);
-  transaction = processNFTData(transaction, block, data, offset);
+  if (transaction.type != 0) {
+    transaction = processNFTData(transaction, block, data, offset);
+  }
 
   accounts.push(intToString(transaction.toAccountID));
   accounts.push(intToString(transaction.minterAccountID));
@@ -346,6 +348,7 @@ function processNFTData(
         "First segment of data for mint transaction with ID: {} isn't of type NFTData. Actual type: {}, expected type: {}",
         [transaction.id, txTypeFirstSegment, TRANSACTION_NFT_DATA]
       );
+      return transaction as MintNFT;
     }
 
     transaction.nftID =
@@ -375,6 +378,7 @@ function processNFTData(
           "Second segment of data for mint transaction with ID: {} isn't of type NFTData. Actual type: {}, expected type: {}",
           [transaction.id, txTypeSecondSegment, TRANSACTION_NFT_DATA]
         );
+        return transaction as MintNFT;
       }
 
       let nftDataTxType = extractInt(data, offset, 1);
@@ -387,9 +391,14 @@ function processNFTData(
         );
       }
 
-      transaction.nftType = extractInt(data, offset, 1);
+      transaction.nftType = extractInt(
+        secondDataSegment,
+        secondDataSegmentOffset,
+        1
+      );
       offset += 1;
-      transaction.tokenAddress = "0x" + extractData(data, offset, 20);
+      transaction.tokenAddress =
+        "0x" + extractData(secondDataSegment, secondDataSegmentOffset, 20);
       offset += 20;
     }
   }

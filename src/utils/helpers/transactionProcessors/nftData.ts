@@ -102,10 +102,10 @@ export function processNFTData(
   transaction.nftType = extractInt(data, offset, 1);
   offset += 1;
   if (transaction.type == 0) {
-    transaction.minter = extractData(data, offset, 20);
+    transaction.minter = "0x" + extractData(data, offset, 20);
     offset += 20;
   } else {
-    transaction.tokenAddress = extractData(data, offset, 20);
+    transaction.tokenAddress = "0x" + extractData(data, offset, 20);
     offset += 20;
   }
 
