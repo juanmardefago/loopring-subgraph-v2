@@ -68,7 +68,7 @@ export function processSignatureVerification(
 
   let offset = 1;
 
-  transaction.owner = extractData(data, offset, 20);
+  transaction.owner = "0x" + extractData(data, offset, 20);
   offset += 20;
   transaction.accountID = extractInt(data, offset, 4);
   offset += 4;

@@ -168,9 +168,9 @@ export function processTransfer(
   offset += 2;
   transaction.storageID = extractInt(data, offset, 4);
   offset += 4;
-  transaction.to = extractData(data, offset, 20);
+  transaction.to = "0x" + extractData(data, offset, 20);
   offset += 20;
-  transaction.from = extractData(data, offset, 20);
+  transaction.from = "0x" + extractData(data, offset, 20);
   offset += 20;
   transaction.toTokenID = extractInt(data, offset, 2);
   offset += 2;

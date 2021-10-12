@@ -83,7 +83,7 @@ export function processDeposit(
 
   let offset = 1; // First byte is tx type
 
-  transaction.to = extractData(data, offset, 20);
+  transaction.to = "0x" + extractData(data, offset, 20);
   offset += 20;
   transaction.toAccountID = extractInt(data, offset, 4);
   offset += 4;

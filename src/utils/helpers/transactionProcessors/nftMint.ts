@@ -233,17 +233,26 @@ export function processNFTMint(
     offset += 1;
 
     transaction.toAccountID = transaction.minterAccountID;
+
+    let user = User.load(intToString(transaction.toAccountID))
+
+    if(user != null) {
+      transaction.tokenAddress = user.address.toHexString()
+    }
   } else {
     transaction.toAccountID = extractInt(data, offset, 4);
     offset += 4;
     transaction.to = "0x" + extractData(data, offset, 20);
     offset += 20;
+
+    createIfNewAccount(transaction.toAccountID, transaction.id, transaction.to as String);
   }
 
   let accounts = new Array<String>();
   let tokenBalances = new Array<String>();
 
   transaction.feeToken = intToString(transaction.feeTokenID);
+
 
   offset = 68;
   transaction.extraData = extractData(data, offset, 136);
