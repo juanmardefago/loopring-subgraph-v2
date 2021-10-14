@@ -194,6 +194,9 @@ export function processWithdrawal(
     proxy.withdrawalNFTCount = proxy.withdrawalNFTCount + BIGINT_ONE;
     block.withdrawalNFTCount = block.withdrawalNFTCount + BIGINT_ONE;
 
+    let nfts = new Array<String>();
+    let slots = new Array<String>();
+
     let coercedTransaction = changetype<WithdrawalNFT>(transaction);
     // NFT withdrawal
     // Pay fee
@@ -224,12 +227,18 @@ export function processWithdrawal(
       coercedTransaction.tokenID,
       coercedTransaction.id
     );
+
+    slots.push(slot.id)
+    nfts.push(slot.nft as String)
+
     slot.balance = slot.balance.minus(coercedTransaction.amount);
     if (coercedTransaction.type == 2 || slot.balance <= BIGINT_ZERO) {
       slot.nft = null;
     }
     slot.save();
 
+    coercedTransaction.slots = slots;
+    coercedTransaction.nfts = nfts;
     coercedTransaction.slot = slot.id;
     coercedTransaction.typename = TRANSACTION_WITHDRAWAL_NFT_TYPENAME;
     coercedTransaction.save();

@@ -238,6 +238,9 @@ export function processTransfer(
 
     operatorTokenFeeBalance.save();
 
+    let nfts = new Array<String>();
+    let slots = new Array<String>();
+
     // NFT transfer logic
     let fromSlot = getOrCreateAccountNFTSlot(
       coercedTransaction.accountFromID,
@@ -250,6 +253,9 @@ export function processTransfer(
       coercedTransaction.id
     );
 
+    slots.push(fromSlot.id)
+    slots.push(toSlot.id)
+
     fromSlot.balance = fromSlot.balance.minus(coercedTransaction.amount);
     toSlot.balance = toSlot.balance.plus(coercedTransaction.amount);
 
@@ -257,6 +263,8 @@ export function processTransfer(
     if (fromSlot.balance <= BIGINT_ZERO) {
       fromSlot.nft = null;
     }
+
+    nfts.push(toSlot.nft as String)
 
     toSlot.save();
     fromSlot.save();
@@ -267,6 +275,8 @@ export function processTransfer(
     coercedTransaction.feeToken = feeToken.id;
     coercedTransaction.tokenBalances = tokenBalances;
     coercedTransaction.accounts = accounts;
+    coercedTransaction.slots = slots;
+    coercedTransaction.nfts = nfts;
 
     coercedTransaction.fromAccount = fromAccountId;
     coercedTransaction.toAccount = toAccountId;

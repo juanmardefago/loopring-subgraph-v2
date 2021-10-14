@@ -430,6 +430,9 @@ export function processSpotTrade(
 
   if (isNFT(tokenIDAS) || isNFT(tokenIDBS)) {
     // NFT trade/swap
+    let nfts = new Array<String>();
+    let slots = new Array<String>();
+
     let tokenIDAB =
       transaction.tokenIDAB != 0
         ? transaction.tokenIDAB
@@ -467,9 +470,16 @@ export function processSpotTrade(
         coercedTransaction.id
       );
 
+      slots.push(slotASeller.id)
+      slots.push(slotBSeller.id)
+      slots.push(slotABuyer.id)
+      slots.push(slotBBuyer.id)
+
       // A buy and B sell
       slotABuyer.balance = slotABuyer.balance.plus(coercedTransaction.fillSB);
       slotABuyer.nft = slotBSeller.nft;
+
+      nfts.push(slotABuyer.nft as String)
 
       slotBSeller.balance = slotBSeller.balance.minus(
         coercedTransaction.fillSB
@@ -481,6 +491,8 @@ export function processSpotTrade(
       // B buy and A sell
       slotBBuyer.balance = slotBBuyer.balance.plus(coercedTransaction.fillSA);
       slotBBuyer.nft = slotASeller.nft;
+
+      nfts.push(slotBBuyer.nft as String)
 
       slotASeller.balance = slotASeller.balance.minus(
         coercedTransaction.fillSA
@@ -502,6 +514,8 @@ export function processSpotTrade(
 
       coercedTransaction.tokenBalances = tokenBalances;
       coercedTransaction.accounts = accounts;
+      coercedTransaction.nfts = nfts;
+      coercedTransaction.slots = slots;
 
       coercedTransaction.save();
       // There's no fees on swap nfts
@@ -554,8 +568,13 @@ export function processSpotTrade(
         coercedTransaction.id
       );
 
+      slots.push(slotSeller.id)
+      slots.push(slotBuyer.id)
+
       slotBuyer.balance = slotBuyer.balance.plus(amountNFT);
       slotBuyer.nft = slotSeller.nft;
+
+      nfts.push(slotBuyer.nft as String)
 
       slotSeller.balance = slotSeller.balance.minus(amountNFT);
       if (slotSeller.balance <= BIGINT_ZERO) {
@@ -636,6 +655,8 @@ export function processSpotTrade(
 
       coercedTransaction.tokenBalances = tokenBalances;
       coercedTransaction.accounts = accounts;
+      coercedTransaction.slots = slots;
+      coercedTransaction.nfts = nfts;
 
       coercedTransaction.save();
       protocolAccount.save();

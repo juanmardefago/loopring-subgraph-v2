@@ -109,5 +109,8 @@ export function processNFTData(
     offset += 20;
   }
 
+  transaction.slots = new Array<String>();
+  transaction.nfts = new Array<String>();
+
   transaction.save();
 }

@@ -427,6 +427,9 @@ type NonFungibleToken @entity {
 
   "List of all the AccountNFTSlot where this NFT is currently active."
   slots: [AccountNFTSlot!]! @derivedFrom(field: "nft")
+
+  "List of all the transactions that this particular NFT was a part of"
+  transactions: [TransactionNFT!]! @derivedFrom(field:"nfts")
 }
 
 type AccountNFTSlot @entity {
@@ -453,6 +456,9 @@ type AccountNFTSlot @entity {
 
   "L2 transaction that last updated the slot entity"
   lastUpdatedAtTransaction: Transaction!
+
+  "List of all the transactions that this particular NFT was a part of"
+  transactions: [TransactionNFT!]! @derivedFrom(field: "slots")
 }
 
 enum TransactionType {
@@ -493,6 +499,27 @@ interface Transaction {
   tokenBalances: [AccountTokenBalance!]
 
   accounts: [Account!]
+}
+
+interface TransactionNFT {
+  "All transactions IDs follow the same pattern: <BLOCK ID>-<TX INDEX>"
+  id: ID!
+
+  "Explicit copy of __typename to make it usable when filtering"
+  typename: TransactionType!
+
+  "ID represented as a BigDecimal for sorting purposes"
+  internalID: BigDecimal!
+
+  "Hex string representation of the encoded L2 data for this Transaction"
+  data: String!
+
+  "Link to the Block entity where this Transaction took place"
+  block: Block!
+
+  nfts: [NonFungibleToken!]!
+
+  slots: [AccountNFTSlot!]!
 }
 
 type Deposit implements Transaction @entity {
@@ -576,7 +603,7 @@ type Withdrawal implements Transaction @entity {
   accounts: [Account!]
 }
 
-type WithdrawalNFT implements Transaction @entity {
+type WithdrawalNFT implements Transaction & TransactionNFT @entity {
   id: ID!
 
   "Explicit copy of __typename to make it usable when filtering"
@@ -621,6 +648,10 @@ type WithdrawalNFT implements Transaction @entity {
   tokenBalances: [AccountTokenBalance!]
 
   accounts: [Account!]
+
+  nfts: [NonFungibleToken!]!
+
+  slots: [AccountNFTSlot!]!
 }
 
 type Transfer implements Transaction @entity {
@@ -677,7 +708,7 @@ type Transfer implements Transaction @entity {
   accounts: [Account!]
 }
 
-type TransferNFT implements Transaction @entity {
+type TransferNFT implements Transaction & TransactionNFT @entity {
   id: ID!
 
   "Explicit copy of __typename to make it usable when filtering"
@@ -732,6 +763,10 @@ type TransferNFT implements Transaction @entity {
   tokenBalances: [AccountTokenBalance!]
 
   accounts: [Account!]
+
+  nfts: [NonFungibleToken!]!
+
+  slots: [AccountNFTSlot!]!
 }
 
 type Add implements Transaction @entity {
@@ -1054,7 +1089,7 @@ type Swap implements Transaction @entity {
   accounts: [Account!]
 }
 
-type TradeNFT implements Transaction @entity {
+type TradeNFT implements Transaction & TransactionNFT @entity {
   id: ID!
 
   "Explicit copy of __typename to make it usable when filtering"
@@ -1155,9 +1190,13 @@ type TradeNFT implements Transaction @entity {
   tokenBalances: [AccountTokenBalance!]
 
   accounts: [Account!]
+
+  nfts: [NonFungibleToken!]!
+
+  slots: [AccountNFTSlot!]!
 }
 
-type SwapNFT implements Transaction @entity {
+type SwapNFT implements Transaction & TransactionNFT @entity {
   id: ID!
 
   "Explicit copy of __typename to make it usable when filtering"
@@ -1247,6 +1286,10 @@ type SwapNFT implements Transaction @entity {
   tokenBalances: [AccountTokenBalance!]
 
   accounts: [Account!]
+
+  nfts: [NonFungibleToken!]!
+
+  slots: [AccountNFTSlot!]!
 }
 
 type AccountUpdate implements Transaction @entity {
@@ -1350,7 +1393,7 @@ type SignatureVerification implements Transaction @entity {
   accounts: [Account!]
 }
 
-type MintNFT implements Transaction @entity {
+type MintNFT implements Transaction & TransactionNFT @entity {
   id: ID!
 
   "Explicit copy of __typename to make it usable when filtering"
@@ -1395,9 +1438,13 @@ type MintNFT implements Transaction @entity {
   tokenBalances: [AccountTokenBalance!]
 
   accounts: [Account!]
+
+  nfts: [NonFungibleToken!]!
+
+  slots: [AccountNFTSlot!]!
 }
 
-type DataNFT implements Transaction @entity {
+type DataNFT implements Transaction & TransactionNFT @entity {
   id: ID!
 
   "Explicit copy of __typename to make it usable when filtering"
@@ -1422,6 +1469,10 @@ type DataNFT implements Transaction @entity {
   tokenBalances: [AccountTokenBalance!]
 
   accounts: [Account!]
+
+  nfts: [NonFungibleToken!]!
+
+  slots: [AccountNFTSlot!]!
 }
 
 # Daily data entities

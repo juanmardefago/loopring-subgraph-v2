@@ -234,7 +234,7 @@ export function processNFTMint(
 
     transaction.toAccountID = transaction.minterAccountID;
 
-    let user = User.load(intToString(transaction.toAccountID))
+    let user = User.load(intToString(transaction.tokenAccountID))
 
     if(user != null) {
       transaction.tokenAddress = user.address.toHexString()
@@ -250,9 +250,10 @@ export function processNFTMint(
 
   let accounts = new Array<String>();
   let tokenBalances = new Array<String>();
+  let nfts = new Array<String>();
+  let slots = new Array<String>();
 
   transaction.feeToken = intToString(transaction.feeTokenID);
-
 
   offset = 68;
   transaction.extraData = extractData(data, offset, 136);
@@ -270,6 +271,8 @@ export function processNFTMint(
   nft.creatorFeeBips = transaction.creatorFeeBips;
   nft.save();
 
+  nfts.push(nft.id)
+
   let receiverAccountNFTSlot = getOrCreateAccountNFTSlot(
     transaction.toAccountID,
     transaction.toTokenID,
@@ -280,6 +283,8 @@ export function processNFTMint(
     transaction.amount
   );
   receiverAccountNFTSlot.save();
+
+  slots.push(receiverAccountNFTSlot.id)
 
   transaction.nft = nft.id;
   transaction.receiverSlot = receiverAccountNFTSlot.id;
@@ -312,6 +317,8 @@ export function processNFTMint(
 
   transaction.tokenBalances = tokenBalances;
   transaction.accounts = accounts;
+  transaction.slots = slots;
+  transaction.nfts = nfts;
 
   getAndUpdateAccountTokenBalanceDailyData(
     minterTokenFeeBalance,
