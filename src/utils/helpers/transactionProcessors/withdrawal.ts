@@ -151,12 +151,15 @@ export function processWithdrawal(
   transaction.onchainDataHash = extractData(data, offset, 20);
   offset += 20;
 
+  transaction.valid = transaction.type != 3;
+
   let accountId = intToString(transaction.fromAccountID);
 
   let accounts = new Array<String>();
   accounts.push(accountId);
 
-  let feeToken = getToken(intToString(transaction.feeTokenID)) as Token;
+  // Will have to use check steps in case invalid transactions have invalid tokens
+  let feeTokenCheck = getToken(intToString(transaction.feeTokenID));
 
   createIfNewAccount(
     transaction.fromAccountID,
@@ -166,28 +169,31 @@ export function processWithdrawal(
 
   let tokenBalances = new Array<String>();
 
-  let operatorTokenFeeBalance = getOrCreateAccountTokenBalance(
-    intToString(block.operatorAccountID),
-    feeToken.id
-  );
-  operatorTokenFeeBalance.balance = operatorTokenFeeBalance.balance.plus(
-    transaction.fee
-  );
-  tokenBalances.push(operatorTokenFeeBalance.id);
+  if (transaction.valid) {
+    let feeToken = feeTokenCheck as Token;
+    let operatorTokenFeeBalance = getOrCreateAccountTokenBalance(
+      intToString(block.operatorAccountID),
+      feeToken.id
+    );
+    operatorTokenFeeBalance.balance = operatorTokenFeeBalance.balance.plus(
+      transaction.fee
+    );
+    tokenBalances.push(operatorTokenFeeBalance.id);
 
-  operatorTokenFeeBalance.save();
+    operatorTokenFeeBalance.save();
 
-  getAndUpdateAccountTokenBalanceDailyData(
-    operatorTokenFeeBalance,
-    block.timestamp
-  );
-  getAndUpdateAccountTokenBalanceWeeklyData(
-    operatorTokenFeeBalance,
-    block.timestamp
-  );
+    getAndUpdateAccountTokenBalanceDailyData(
+      operatorTokenFeeBalance,
+      block.timestamp
+    );
+    getAndUpdateAccountTokenBalanceWeeklyData(
+      operatorTokenFeeBalance,
+      block.timestamp
+    );
+  }
 
   transaction.fromAccount = accountId;
-  transaction.feeToken = feeToken.id;
+  transaction.feeToken = feeTokenCheck != null ? (feeTokenCheck as Token).id : null;
   transaction.accounts = accounts;
 
   if (isNFT(transaction.tokenID)) {
@@ -199,85 +205,20 @@ export function processWithdrawal(
 
     let coercedTransaction = changetype<WithdrawalNFT>(transaction);
     // NFT withdrawal
-    // Pay fee
-    let accountTokenFeeBalance = getOrCreateAccountTokenBalance(
-      accountId,
-      feeToken.id
-    );
-    accountTokenFeeBalance.balance = accountTokenFeeBalance.balance.minus(
-      transaction.fee
-    );
-
-    accountTokenFeeBalance.save();
-    tokenBalances.push(accountTokenFeeBalance.id);
-
-    getAndUpdateAccountTokenBalanceDailyData(
-      accountTokenFeeBalance,
-      block.timestamp
-    );
-    getAndUpdateAccountTokenBalanceWeeklyData(
-      accountTokenFeeBalance,
-      block.timestamp
-    );
-
-    coercedTransaction.tokenBalances = tokenBalances;
-
     let slot = getOrCreateAccountNFTSlot(
       coercedTransaction.fromAccountID,
       coercedTransaction.tokenID,
       coercedTransaction.id
     );
-
-    slots.push(slot.id)
-    nfts.push(slot.nft as String)
-
     slot.balance = slot.balance.minus(coercedTransaction.amount);
     if (coercedTransaction.type == 2 || slot.balance <= BIGINT_ZERO) {
       slot.nft = null;
     }
     slot.save();
 
-    coercedTransaction.slots = slots;
-    coercedTransaction.nfts = nfts;
-    coercedTransaction.slot = slot.id;
-    coercedTransaction.typename = TRANSACTION_WITHDRAWAL_NFT_TYPENAME;
-    coercedTransaction.save();
-  } else {
-    proxy.withdrawalCount = proxy.withdrawalCount + BIGINT_ONE;
-    block.withdrawalCount = block.withdrawalCount + BIGINT_ONE;
-    // ERC20 withdrawal
-    let token = getToken(intToString(transaction.tokenID)) as Token;
-    // Make sure we don't overwrite balance entities
-    if (token.id == feeToken.id) {
-      let accountTokenBalance = getOrCreateAccountTokenBalance(
-        accountId,
-        token.id
-      );
-      accountTokenBalance.balance = accountTokenBalance.balance.minus(
-        transaction.amount.minus(transaction.fee)
-      );
-
-      accountTokenBalance.save();
-      tokenBalances.push(accountTokenBalance.id);
-
-      getAndUpdateAccountTokenBalanceDailyData(
-        accountTokenBalance,
-        block.timestamp
-      );
-      getAndUpdateAccountTokenBalanceWeeklyData(
-        accountTokenBalance,
-        block.timestamp
-      );
-    } else {
-      let accountTokenBalance = getOrCreateAccountTokenBalance(
-        accountId,
-        token.id
-      );
-      accountTokenBalance.balance = accountTokenBalance.balance.minus(
-        transaction.amount
-      );
-      accountTokenBalance.save();
-
+    if (transaction.valid) {
+      // Pay fee
+      let feeToken = feeTokenCheck as Token;
       let accountTokenFeeBalance = getOrCreateAccountTokenBalance(
         accountId,
         feeToken.id
@@ -287,19 +228,9 @@ export function processWithdrawal(
       );
 
       accountTokenFeeBalance.save();
-
-      tokenBalances.push(accountTokenBalance.id);
       tokenBalances.push(accountTokenFeeBalance.id);
 
       getAndUpdateAccountTokenBalanceDailyData(
-        accountTokenBalance,
-        block.timestamp
-      );
-      getAndUpdateAccountTokenBalanceWeeklyData(
-        accountTokenBalance,
-        block.timestamp
-      );
-      getAndUpdateAccountTokenBalanceDailyData(
         accountTokenFeeBalance,
         block.timestamp
       );
@@ -307,9 +238,92 @@ export function processWithdrawal(
         accountTokenFeeBalance,
         block.timestamp
       );
+
+      slots.push(slot.id);
+      nfts.push(slot.nft as String);
     }
 
-    transaction.token = token.id;
+    coercedTransaction.tokenBalances = tokenBalances;
+    coercedTransaction.slots = slots;
+    coercedTransaction.nfts = nfts;
+    coercedTransaction.slot = slot.id;
+    coercedTransaction.typename = TRANSACTION_WITHDRAWAL_NFT_TYPENAME;
+    coercedTransaction.save();
+  } else {
+    proxy.withdrawalCount = proxy.withdrawalCount + BIGINT_ONE;
+    block.withdrawalCount = block.withdrawalCount + BIGINT_ONE;
+    // ERC20 withdrawal
+    let tokenCheck = getToken(intToString(transaction.tokenID));
+
+    if (transaction.valid) {
+      let feeToken = feeTokenCheck as Token;
+      let token = tokenCheck as Token;
+      // Make sure we don't overwrite balance entities
+      if (token.id == feeToken.id) {
+        let accountTokenBalance = getOrCreateAccountTokenBalance(
+          accountId,
+          token.id
+        );
+        accountTokenBalance.balance = accountTokenBalance.balance.minus(
+          transaction.amount.minus(transaction.fee)
+        );
+
+        accountTokenBalance.save();
+        tokenBalances.push(accountTokenBalance.id);
+
+        getAndUpdateAccountTokenBalanceDailyData(
+          accountTokenBalance,
+          block.timestamp
+        );
+        getAndUpdateAccountTokenBalanceWeeklyData(
+          accountTokenBalance,
+          block.timestamp
+        );
+      } else {
+        let accountTokenBalance = getOrCreateAccountTokenBalance(
+          accountId,
+          token.id
+        );
+        accountTokenBalance.balance = accountTokenBalance.balance.minus(
+          transaction.amount
+        );
+        accountTokenBalance.save();
+
+        let accountTokenFeeBalance = getOrCreateAccountTokenBalance(
+          accountId,
+          feeToken.id
+        );
+        accountTokenFeeBalance.balance = accountTokenFeeBalance.balance.minus(
+          transaction.fee
+        );
+
+        accountTokenFeeBalance.save();
+
+        tokenBalances.push(accountTokenBalance.id);
+        tokenBalances.push(accountTokenFeeBalance.id);
+
+        getAndUpdateAccountTokenBalanceDailyData(
+          accountTokenBalance,
+          block.timestamp
+        );
+        getAndUpdateAccountTokenBalanceWeeklyData(
+          accountTokenBalance,
+          block.timestamp
+        );
+        getAndUpdateAccountTokenBalanceDailyData(
+          accountTokenFeeBalance,
+          block.timestamp
+        );
+        getAndUpdateAccountTokenBalanceWeeklyData(
+          accountTokenFeeBalance,
+          block.timestamp
+        );
+      }
+    }
+
+    // Only set the token if it's not null. Could potentially be null on invalid transactions
+    transaction.token = tokenCheck != null ? (tokenCheck as Token).id : null;
+
     transaction.tokenBalances = tokenBalances;
     transaction.save();
   }

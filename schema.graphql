@@ -573,10 +573,13 @@ type Withdrawal implements Transaction @entity {
   fromAccount: Account!
 
   "Token entity with information about the withdrawn token"
-  token: Token!
+  token: Token
 
   "Token entity with information about the token used to pay the operator fees"
-  feeToken: Token!
+  feeToken: Token
+
+  "Whether the withdrawal transaction is valid. Only type 3 withdrawals are invalid."
+  valid: Boolean!
 
   # Raw data parsed from the L2 data
   "[RAW L2 DATA] Withdrawal type"
@@ -623,7 +626,10 @@ type WithdrawalNFT implements Transaction & TransactionNFT @entity {
   slot: AccountNFTSlot!
 
   "Token entity with information about the token used to pay the operator fees"
-  feeToken: Token!
+  feeToken: Token
+
+  "Whether the withdrawal transaction is valid. Only type 3 withdrawals are invalid."
+  valid: Boolean!
 
   # Raw data parsed from the L2 data
   "[RAW L2 DATA] Withdrawal type"
