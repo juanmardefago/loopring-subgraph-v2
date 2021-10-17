@@ -23,11 +23,17 @@ dataSources:
         - User
         - Pool
         - ProtocolAccount
-        - Deposit
         - Withdrawal
+        - WithdrawalNFT
+        - Deposit
         - Transfer
-        - SpotTrade
+        - Add
+        - Remove
         - AmmUpdate
+        - Swap
+        - OrderbookTrade
+        - SwapNFT
+        - TradeNFT
         - AccountUpdate
         - SignatureVerification
       abis:

@@ -211,6 +211,7 @@ export function processWithdrawal(
       coercedTransaction.id
     );
     slot.balance = slot.balance.minus(coercedTransaction.amount);
+    let nftIDBefore = slot.nft
     if (coercedTransaction.type == 2 || slot.balance <= BIGINT_ZERO) {
       slot.nft = null;
     }
@@ -240,7 +241,7 @@ export function processWithdrawal(
       );
 
       slots.push(slot.id);
-      nfts.push(slot.nft as String);
+      nfts.push(nftIDBefore as String);
     }
 
     coercedTransaction.tokenBalances = tokenBalances;
