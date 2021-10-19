@@ -28,10 +28,10 @@ dataSources:
         - Deposit
         - Transfer
         - Add
-        - Remove
         - AmmUpdate
-        - Swap
+        - Remove
         - OrderbookTrade
+        - Swap
         - SwapNFT
         - TradeNFT
         - AccountUpdate
