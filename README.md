@@ -1,4 +1,4 @@
-# Loopring Exchange V2 subgraph (Loopring 3.6)
+# Loopring Exchange V2 subgraph (Loopring 3.6.5)
 
 This subgraph aims to allow anyone to query data for the Loopring Exchange v2, with support for L2 blocks, transactions, accounts, pools, tokens, pairs and aggregations of trade volumes by token and pair on a weekly and daily basis.
 
@@ -40,11 +40,23 @@ This entity reprensents the balance of a particular `Token`, that a particular `
 
 Aside from links to the relevant `Token` and `Account`, and a balance field, this entity also has a list of all the `Transaction` entities that modified it.
 
+#### NonFungibleToken
+
+This entity reprensents a "unique" Non-Fungible Token (or NFT). It can be either an ERC1155 or ERC721 NFT.
+
+#### AccountNFTSlot
+
+This entity reprensents a particular NFT slot for a given `Account`.
+
+In Loopring, NFTs are "stored" in slots for each account, and they support NFT balances (in case it's an ERC1155).
+
+Each slot is a combination of the `Account.id` and `Token.id` that was passed in the transaction where the `AccountNFTSlot` was created. Only `Token.id` >= 32768 are valid for NFT slots.
+
 #### Block
 
 The `Block` entity represents a single L2 block on the Loopring exchange.
 
-It contains L1 metadata for the block (gasPrice, timestamp, L1 block height when the block was included, etc), as well as L2 metadata, like blockType, blockSize, blockVersion, operator that handled the block, etc.
+It contains L1 metadata for the block (gasLimit, timestamp, L1 block height when the block was included, etc), as well as L2 metadata, like blockType, blockSize, blockVersion, operator that handled the block, etc.
 
 It also contains the raw data represented as a hex string, parsed block data, like the fee maker and taker bips, and a list of all the parsed transactions from said block of raw data.
 
@@ -57,17 +69,29 @@ The `Transaction` interface is implemented by entities that represent all the tr
 * Deposit
 * Withdrawal
 * Transfer
-* SpotTrade
+* Add
+* Remove
+* OrderbookTrade
+* Swap
+* WithdrawalNFT
+* TransferNFT
+* TradeNFT
+* SwapNFT
+* MintNFT
+* DataNFT
 
 The interface only defines the commmon points, which is only a reference to the `Block` entity where the transaction was created, the raw L2 data expressed as a hex string, and also a list of all the `AccountTokenBalance` entities that the transaction modified (useful for the transactions lists on said entity).
 
 Each of the implementations contains type specific parsed data from the raw L2 data. For more information, you can check the schema file, which has all relevant fields documented.
 
+There's also a parallel interface called `TransactionNFT`, which makes sure to include the `nfts` and `slots` fields, so that `NonFungibleToken` entities can have a list of transactions that included them, for ease of use.
+
 #### Daily and weekly aggregated data
 
-There are specific entities that aggregate `Token` and `Pair` data on a daily and weekly basis.
+There are specific entities that aggregate `AccountTokenBalance`, `Token` and `Pair` data on a daily and weekly basis.
 `PairDailyData` and `PairWeeklyData` aggregate data for the `Pair` entity such as trade volume and token price (high, low, open, close).
 `TokenDailyData` and `TokenWeeklyData` aggregate data for the `Token` entity, in particular the trade volume.
+`AccountTokenBalanceDailyData` and `AccountTokenBalanceWeeklyData` aggregate data for the `AccountTokenBalance` entity, in particular the balances for each of the `Token` entities that and `Account` has.
 
 All daily/weekly aggregation entities have fields to reference the day/week start and end, as well as the day/week "number". This number is relative to the Loopring exchange v2 launch, since we needed to define a start point for all daily/weekly aggregation entities.
 
@@ -109,38 +133,15 @@ Get all account token balances for a specific token
 }
 ```
 
-Get all spot trades for a particular account ID (two lists since any account could be the accountA or accountB)
+Get all swaps for a particular account ID
 
 ```graphql
 {
-  tradesA: spotTrades(where: {accountA: "<ACCOUNT-ID>"}) {
-    accountA {
+  swaps(where: {account: "<ACCOUNT-ID>"}) {
+    account {
       id
     }
-    accountB {
-      id
-    }
-    tokenA {
-      symbol
-      decimals
-    }
-    tokenB {
-      symbol
-      decimals
-    }
-    fillSA
-    fillSB
-    feeA
-    feeB
-    id
-    tokenAPrice
-    tokenBPrice
-  }
-  tradesB: spotTrades(where: {accountB: "<ACCOUNT-ID>"}) {
-    accountA {
-      id
-    }
-    accountB {
+    pool {
       id
     }
     tokenA {
@@ -160,6 +161,40 @@ Get all spot trades for a particular account ID (two lists since any account cou
     tokenBPrice
   }
 }
+```
+
+Get all orderbook trades for a particular account ID (no need to do 2 queries, we can do it on a single one now with `account_contains:["<ACCOUNT-ID>"]`)
+
+```graphql
+{
+  orderbookTrades(where:{accounts_contains:["<ACCOUNT-ID>"]}) {
+    accountA {
+      id
+    }
+    accountB {
+      id
+    }
+    accounts {
+      id
+    }
+    tokenA {
+      symbol
+      decimals
+    }
+    tokenB {
+      symbol
+      decimals
+    }
+    fillSA
+    fillSB
+    feeA
+    feeB
+    id
+    tokenAPrice
+    tokenBPrice
+  }
+}
+
 ```
 
 Get pair daily data for ETH-LRC pair (0-1) ordered by dayNumber (ascending)
