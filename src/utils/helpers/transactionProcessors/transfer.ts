@@ -25,7 +25,6 @@ import {
   getAndUpdateAccountTokenBalanceDailyData,
   getAndUpdateAccountTokenBalanceWeeklyData,
   getOrCreateAccountNFTSlot,
-  getOrCreateNFT
 } from "../index";
 import {
   TRANSACTION_TRANSFER_TYPENAME,

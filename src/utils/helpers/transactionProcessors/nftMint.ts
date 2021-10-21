@@ -234,10 +234,10 @@ export function processNFTMint(
 
     transaction.toAccountID = transaction.minterAccountID;
 
-    let user = User.load(intToString(transaction.tokenAccountID))
+    let user = User.load(intToString(transaction.tokenAccountID));
 
-    if(user != null) {
-      transaction.tokenAddress = user.address.toHexString()
+    if (user != null) {
+      transaction.tokenAddress = user.address.toHexString();
     }
   } else {
     transaction.toAccountID = extractInt(data, offset, 4);
@@ -245,7 +245,11 @@ export function processNFTMint(
     transaction.to = "0x" + extractData(data, offset, 20);
     offset += 20;
 
-    createIfNewAccount(transaction.toAccountID, transaction.id, transaction.to as String);
+    createIfNewAccount(
+      transaction.toAccountID,
+      transaction.id,
+      transaction.to as String
+    );
   }
 
   let accounts = new Array<String>();
@@ -264,14 +268,27 @@ export function processNFTMint(
   accounts.push(intToString(transaction.toAccountID));
   accounts.push(intToString(transaction.minterAccountID));
 
-  let nft = getOrCreateNFT(transaction.nftID, transaction.id, proxy);
+  let minter = User.load(intToString(transaction.minterAccountID)) as User;
+
+  // Ideally the ID of the NFT should be the Poseidon hash of the NFT DATA, but we don't have support for Poseidon hashing
+  let nftID = minter.address.toHexString()
+    .concat("-")
+    .concat(intToString(transaction.nftType))
+    .concat("-")
+    .concat(transaction.tokenAddress)
+    .concat("-")
+    .concat(transaction.nftID)
+    .concat("-")
+    .concat(intToString(transaction.creatorFeeBips));
+  let nft = getOrCreateNFT(nftID, transaction.id, proxy);
   nft.minter = intToString(transaction.minterAccountID);
   nft.nftType = transaction.nftType;
   nft.token = transaction.tokenAddress;
+  nft.nftID = transaction.nftID;
   nft.creatorFeeBips = transaction.creatorFeeBips;
   nft.save();
 
-  nfts.push(nft.id)
+  nfts.push(nft.id);
 
   let receiverAccountNFTSlot = getOrCreateAccountNFTSlot(
     transaction.toAccountID,
@@ -284,7 +301,7 @@ export function processNFTMint(
   );
   receiverAccountNFTSlot.save();
 
-  slots.push(receiverAccountNFTSlot.id)
+  slots.push(receiverAccountNFTSlot.id);
 
   transaction.nft = nft.id;
   transaction.receiverSlot = receiverAccountNFTSlot.id;

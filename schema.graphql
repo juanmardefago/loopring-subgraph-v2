@@ -421,9 +421,11 @@ type NonFungibleToken @entity {
 
   nftType: Int!
 
-  token: String
+  token: String!
 
   creatorFeeBips: Int!
+
+  nftID: String!
 
   "List of all the AccountNFTSlot where this NFT is currently active."
   slots: [AccountNFTSlot!]! @derivedFrom(field: "nft")
@@ -1431,15 +1433,15 @@ type MintNFT implements Transaction & TransactionNFT @entity {
   fee: BigInt!
   amount: BigInt!
   storageID: Int
-  nftType: Int
+  nftType: Int!
   tokenAccountID: Int
   nftID: String!
-  creatorFeeBips: Int
+  creatorFeeBips: Int!
   toAccountID: Int
   to: String
   "Data from the NFTData transactions that follow the mint"
   extraData: String
-  tokenAddress: String
+  tokenAddress: String!
 
   tokenBalances: [AccountTokenBalance!]
 
