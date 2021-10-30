@@ -20,6 +20,8 @@
 
 ---
 
+Graph owner: 0x4757D97449acA795510b9f3152C6a9019A3545c3
+
 Our new subgraph was deployed to https://thegraph.com/explorer/subgraph/loopring/loopring
 
 Subgraph endpoints:
