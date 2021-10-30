@@ -20,7 +20,7 @@
 
 ---
 
-Deployed to https://thegraph.com/explorer/subgraph/loopring/loopring
+Our new subgraph was deployed to https://thegraph.com/explorer/subgraph/loopring/loopring
 
 Subgraph endpoints:
 Queries (HTTP):     https://api.thegraph.com/subgraphs/name/loopring/loopring
