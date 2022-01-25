@@ -185,9 +185,15 @@ export function processTransfer(
   createIfNewAccount(
     transaction.accountFromID,
     transaction.id,
-    transaction.from
+    transaction.from,
+    proxy
   );
-  createIfNewAccount(transaction.accountToID, transaction.id, transaction.to);
+  createIfNewAccount(
+    transaction.accountToID,
+    transaction.id,
+    transaction.to,
+    proxy
+  );
 
   transaction.internalID = compoundIdToSortableDecimal(id);
   transaction.data = data;

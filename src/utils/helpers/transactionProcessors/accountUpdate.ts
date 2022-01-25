@@ -131,7 +131,8 @@ export function processAccountUpdate(
   let user = getOrCreateUser(
     intToString(transaction.accountID),
     transaction.id,
-    transaction.owner
+    transaction.owner,
+    proxy
   );
   user.publicKey = transaction.publicKey;
   user.lastUpdatedAt = transaction.internalID;

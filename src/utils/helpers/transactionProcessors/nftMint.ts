@@ -248,7 +248,8 @@ export function processNFTMint(
     createIfNewAccount(
       transaction.toAccountID,
       transaction.id,
-      transaction.to as String
+      transaction.to as String,
+      proxy
     );
   }
 

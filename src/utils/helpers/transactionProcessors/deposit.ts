@@ -97,7 +97,12 @@ export function processDeposit(
   let token = getToken(intToString(transaction.tokenID)) as Token;
   let tokenBalances = new Array<String>();
 
-  createIfNewAccount(transaction.toAccountID, transaction.id, transaction.to);
+  createIfNewAccount(
+    transaction.toAccountID,
+    transaction.id,
+    transaction.to,
+    proxy
+  );
 
   let accounts = new Array<String>();
   accounts.push(accountId);

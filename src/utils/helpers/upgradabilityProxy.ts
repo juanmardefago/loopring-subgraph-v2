@@ -27,6 +27,8 @@ export function getProxy(): Proxy {
     proxy.nftMintCount = BIGINT_ZERO;
     proxy.nftDataCount = BIGINT_ZERO;
     proxy.nftCount = BIGINT_ZERO;
+    proxy.userCount = BIGINT_ZERO;
+    proxy.poolCount = BIGINT_ZERO;
 
     proxy.save();
   }

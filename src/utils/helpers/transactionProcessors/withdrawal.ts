@@ -164,7 +164,8 @@ export function processWithdrawal(
   createIfNewAccount(
     transaction.fromAccountID,
     transaction.id,
-    transaction.from
+    transaction.from,
+    proxy
   );
 
   let tokenBalances = new Array<String>();

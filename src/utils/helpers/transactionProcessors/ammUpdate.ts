@@ -101,7 +101,8 @@ export function processAmmUpdate(
   let pool = getOrCreatePool(
     intToString(transaction.accountID),
     transaction.id,
-    transaction.owner
+    transaction.owner,
+    proxy
   );
   pool.feeBipsAMM = transaction.feeBips;
   pool.lastUpdatedAt = transaction.internalID;

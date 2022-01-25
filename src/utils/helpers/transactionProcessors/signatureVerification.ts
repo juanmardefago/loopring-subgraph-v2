@@ -84,7 +84,12 @@ export function processSignatureVerification(
 
   let accountId = intToString(transaction.accountID);
 
-  createIfNewAccount(transaction.accountID, transaction.id, transaction.owner);
+  createIfNewAccount(
+    transaction.accountID,
+    transaction.id,
+    transaction.owner,
+    proxy
+  );
 
   let accounts = new Array<String>();
   accounts.push(accountId);
