@@ -265,12 +265,13 @@ export function processTransfer(
     toSlot.balance = toSlot.balance.plus(coercedTransaction.amount);
 
     toSlot.nft = fromSlot.nft;
-    if (fromSlot.balance <= BIGINT_ZERO) {
-      fromSlot.nft = null;
-    }
 
     if(toSlot.nft != null) {
       nfts.push(toSlot.nft as String);
+    }
+
+    if (fromSlot.balance <= BIGINT_ZERO) {
+      fromSlot.nft = null;
     }
 
     toSlot.save();
