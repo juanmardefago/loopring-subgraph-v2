@@ -436,11 +436,11 @@ export function processSpotTrade(
     let tokenIDAB =
       transaction.tokenIDAB != 0
         ? transaction.tokenIDAB
-        : transaction.tokenIDAS;
+        : transaction.tokenIDBS;
     let tokenIDBB =
       transaction.tokenIDBB != 0
         ? transaction.tokenIDBB
-        : transaction.tokenIDBS;
+        : transaction.tokenIDAS;
 
     // Check whether it's a swap or a trade
     if (isNFT(tokenIDAS) && isNFT(tokenIDBS)) {
