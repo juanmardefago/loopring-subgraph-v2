@@ -266,9 +266,7 @@ export function processTransfer(
 
     toSlot.nft = fromSlot.nft;
 
-    if(toSlot.nft != null) {
-      nfts.push(toSlot.nft as String);
-    }
+    nfts.push(toSlot.nft as String);
 
     if (fromSlot.balance <= BIGINT_ZERO) {
       fromSlot.nft = null;
